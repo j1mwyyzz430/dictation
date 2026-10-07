@@ -1511,8 +1511,81 @@ async function deletePaper6(a){if(!a)return;const m=marks(a);
   if($('tList'))showTeacherRows();rankData=null;refreshBoard();toast(`已刪除 ${a.name} 的答卷及筆跡。`,'good')}
  catch(e){closeModal();toast('刪除未完成：'+e.message,'bad')}
 }
-function tContent(){
- if(!cEdit)cEdit=clone(cfg);Object.values(cEdit.lessons).flat().forEach(normalizeLesson6);tContentV5();const l=cEdit.lessons[cClass]?.[cLesson];if(!l||!$('eP'))return;
+/* 課次管理：按年級顯示，保留課件原有儲存位置 */
+function refreshLessonGradeMenu(){
+ const classMenu=$('lessonClass'),lessonMenu=$('eL');
+ if(!cEdit||!classMenu||!lessonMenu)return;
+
+ const entries=Object.entries(cEdit.lessons).flatMap(
+  ([key,list])=>list.map((lesson,index)=>({
+   key,index,lesson,
+   grade:String(lesson.grade||gradeOf(key))
+  }))
+ );
+
+ const current=cEdit.lessons[cClass]?.[cLesson];
+ const selectedGrade=String(current?.grade||gradeOf(cClass));
+
+ const grades=[...new Set([
+  ...Object.keys(cEdit.classes||{}).map(gradeOf),
+  ...Object.keys(cEdit.lessons).map(gradeOf),
+  ...entries.map(x=>x.grade)
+ ])].sort((a,b)=>Number(a)-Number(b));
+
+ const labels={
+  '1':'一年級','2':'二年級','3':'三年級',
+  '4':'四年級','5':'五年級','6':'六年級'
+ };
+
+ classMenu.innerHTML=grades.map(g=>
+  `<option value="${esc(g)}">${esc(labels[g]||g+' 年級')}</option>`
+ ).join('');
+ classMenu.value=selectedGrade;
+
+ const visible=entries.filter(x=>x.grade===selectedGrade);
+ const status={draft:'草稿',published:'發布',archived:'封存'};
+
+ lessonMenu.innerHTML=visible.map((x,n)=>
+  `<option value="${n}">${esc(x.lesson.title)} · ${
+   status[x.lesson.status]||'草稿'
+  }</option>`
+ ).join('');
+
+ const selected=visible.findIndex(
+  x=>x.key===cClass&&x.index===cLesson
+ );
+ lessonMenu.value=String(selected);
+
+ lessonMenu.onchange=()=>{
+  const target=visible[Number(lessonMenu.value)];
+  if(!target)return;
+  collect();
+  cClass=target.key;
+  cLesson=target.index;
+  tContent();
+ };
+
+ classMenu.onchange=()=>{
+  const grade=classMenu.value;
+  collect();
+  const target=entries.find(x=>x.grade===grade);
+  if(target){
+   cClass=target.key;
+   cLesson=target.index;
+  }else{
+   cClass=Object.keys(cEdit.lessons).find(
+    key=>String(gradeOf(key))===grade
+   )||Object.keys(cEdit.classes||{}).find(
+    key=>String(gradeOf(key))===grade
+   )||grade+'B';
+   cEdit.lessons[cClass]??=[];
+   cLesson=0;
+  }
+  tContent();
+ };
+}
+ function tContent(){
+ if(!cEdit)cEdit=clone(cfg);Object.values(cEdit.lessons).flat().forEach(normalizeLesson6);tContentV5();refreshLessonGradeMenu();const l=cEdit.lessons[cClass]?.[cLesson];if(!l||!$('eP'))return;
  const first=$('eP');first.setAttribute('data-readparagraph','0');first.previousElementSibling.textContent='讀默段落 1';
  first.insertAdjacentHTML('afterend',`${l.paragraphs.slice(1).map((p,i)=>`<label class="f">讀默段落 ${i+2}</label><textarea class="in" data-readparagraph="${i+1}" rows="5">${esc(p)}</textarea>`).join('')}<button class="btn sky sm" id="addReadParagraph6" style="margin-top:10px">＋ 新增讀默段落</button><p class="small muted">每個框是一個完整段落；清空該框即可移除。</p><h3>背默段落（獨立題庫）</h3>${(l.memoryParagraphs.length?l.memoryParagraphs:['']).map((p,i)=>`<label class="f">背默段落 ${i+1}</label><textarea class="in" data-memoryparagraph="${i}" rows="5">${esc(p)}</textarea>`).join('')}<button class="btn sky sm" id="addMemoryParagraph6" style="margin-top:10px">＋ 新增背默段落</button><p class="small muted">背默內容不會混入整份讀默或隨機讀默。</p>`);
  $('addReadParagraph6').onclick=()=>{collect();l.paragraphs.push('');tContent()};$('addMemoryParagraph6').onclick=()=>{collect();l.memoryParagraphs.push('');tContent()};
