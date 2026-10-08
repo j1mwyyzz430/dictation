@@ -392,6 +392,17 @@ body.ui21 .toast{max-width:min(90vw,640px)}body.ui21 dialog{width:min(640px,94vw
 .paragraph-choice21{display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-height:118px;padding:16px;border:2px solid var(--line);border-radius:18px;background:var(--card)}
 .paragraph-choice21.on{border-color:var(--tomato);background:var(--sun-l)}
 .paragraph-choice21 small,.paragraph-choice21 span{font-size:14px}
+</style><style id="classroom21Style">
+/* v2.1 touch motion: decoration only, never transform writing geometry. */
+@media(prefers-reduced-motion:no-preference){
+ body.ui21 .login .bob{animation:bob 3.8s ease-in-out infinite!important}
+ body.ui21 .hero-art .bob{animation:bob 4.5s ease-in-out infinite!important}
+ body.ui21 .scope-cards21 button.on,body.ui21 .paragraph-choice21.on{animation:choiceGlow21 .3s ease-out}
+ body.ui21 .book:active,body.ui21 .mode:active,body.ui21 .nm:active{transform:scale(.98);transition:transform .12s ease-out}
+ @keyframes choiceGlow21{from{box-shadow:0 0 0 5px #F3B53F55}to{box-shadow:0 0 0 0 transparent}}
+}
+.edb-links21{margin:16px 0;padding:14px;border:1px solid var(--line);border-radius:18px;background:var(--card)}
+.paragraph-choice21 b{overflow-wrap:anywhere;white-space:normal}
 </style></head><body class="ui21">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
 <symbol id="mascot" viewBox="0 0 120 170"><g stroke="#3B2F2A" stroke-width="3" stroke-linejoin="round"><rect x="30" y="8" width="60" height="28" rx="12" fill="#F09AA2"></rect><rect x="30" y="30" width="60" height="14" fill="#C9D4DE"></rect><rect x="30" y="42" width="60" height="82" fill="#F3B53F"></rect><path d="M50 44v78M70 44v78" stroke-width="2" opacity=".35"></path><path d="M30 124h60l-30 42z" fill="#F5D6A8"></path><path d="M52 154h16l-8 12z" fill="#3B2F2A"></path></g><circle cx="48" cy="76" r="5" fill="#3B2F2A"></circle><circle cx="72" cy="76" r="5" fill="#3B2F2A"></circle><circle cx="49.5" cy="74.5" r="1.6" fill="#fff"></circle><circle cx="73.5" cy="74.5" r="1.6" fill="#fff"></circle><ellipse cx="41" cy="90" rx="6" ry="4" fill="#F09AA2" opacity=".8"></ellipse><ellipse cx="79" cy="90" rx="6" ry="4" fill="#F09AA2" opacity=".8"></ellipse><path d="M52 91q8 9 16 0" fill="none" stroke="#3B2F2A" stroke-width="3" stroke-linecap="round"></path></symbol>
@@ -442,7 +453,7 @@ body.ui21 .toast{max-width:min(90vw,640px)}body.ui21 dialog{width:min(640px,94vw
    3. 選 setup → 執行，並授權（包括「連接外部服務」，用來下載字形及手寫辨識）。
       執行後 TEACHER_PASSWORD 會自動轉成加密雜湊，明文屬性會被刪除。
    4. 部署 → 新增部署 → 網頁應用程式；執行身分：我；存取：所有人。
-      之後更新代碼，要「管理部署 → 編輯（鉛筆）→ 版本：新版本 → 部署」，然後再執行一次 setup。
+      之後更新代碼，要「管理部署 → 編輯（鉛筆）→ 版本：新版本 → 部署」。現有網站更新不用重新執行 setup。
    想改密碼：在老師工作台更改；或再次加入 TEACHER_PASSWORD 屬性，然後重新執行 setup。 */
 const SEED = {"classes":{"4N":["湯雅智","平野孝多","陳詠思","詹美珠"],"6B":[]},"settings":{"rate":0.55,"tolerance":"relaxed","penalty":3,"punctuationCounts":false},"lessons":{"4N":[{"id":"lesson2","title":"第二課《掌聲》","words":["吩咐","感動","輪流","分享","鼓掌","介意","視線","講述","鞠躬","脫胎換骨"],"sentences":["今天是我在這個星期裏最快樂的一天　　靜兒和我成了好朋友！","靜兒一站定，我們就熱烈地拍掌，掌聲充滿了關愛和鼓勵。"],"paragraph":"靜兒是我們小組的成員，她很文靜，時常皺着眉，沒有笑容。她有一頭長長的頭髮，喜歡把頭髮散落在肩上，遮掩着兩頰，彷彿想把嘴脣也藏進頭髮裏去，不讓人瞧見她的兔脣。"}],"6B":[{"id":"lesson2","title":"第二課默書","words":["束縛","盼望","響亮","瞬間","沉默","周圍","劇烈","呼喚","勇氣","證明"],"sentences":[],"paragraph":""}]}};
 const CHAR_CDN = 'https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/';
@@ -528,10 +539,10 @@ function normalizeLesson6(l){
 }
 function buildGroups(l,mode,scope){
  const p=Array.isArray(l.paragraphs)?l.paragraphs:(l.paragraph?[l.paragraph]:[]),m=Array.isArray(l.memoryParagraphs)?l.memoryParagraphs:(l.paragraph?[l.paragraph]:[]),g=[];
- if(mode==='memory')return m.map((text,i)=>({key:'m'+i,kind:'背默',text}));
+ if(mode==='memory')return m.map((text,i)=>({key:'m'+i,kind:'背默',text,title:(l.memoryParagraphTitles||[])[i]||'背默段落 '+(i+1)}));
  if(scope==='all'||scope==='words')(l.words||[]).forEach((text,i)=>g.push({key:'w'+i,kind:'詞語',text}));
  if(scope==='all'||scope==='sentences')(l.sentences||[]).forEach((text,i)=>g.push({key:'s'+i,kind:'句子',text}));
- if(scope==='all'||scope==='paragraph')p.forEach((text,i)=>g.push({key:'p'+i,kind:'段落',text}));
+ if(scope==='all'||scope==='paragraph')p.forEach((text,i)=>g.push({key:'p'+i,kind:'段落',text,title:(l.paragraphTitles||[])[i]||'讀默段落 '+(i+1)}));
  return g;
 }
 function selectParagraphGroups21(groups,keys){
@@ -569,7 +580,7 @@ function get5V5_(key){const idx=index5_(),nr=idx.getLastRow();if(nr<2)return nul
 function put5_(key,value){const sh=objects5_(),str=JSON.stringify(value),chunks=[],physical=key+'@'+Utilities.getUuid();for(let i=0;i<str.length;i+=40000)chunks.push([physical,i/40000,str.slice(i,i+40000)]);sh.getRange(sh.getLastRow()+1,1,chunks.length,3).setValues(chunks);const idx=index5_(),nr=idx.getLastRow(),found=nr>1?idx.getRange(2,1,nr-1,1).createTextFinder(key).matchEntireCell(true).matchCase(true).useRegularExpression(false).findAll():[];if(found.length)idx.getRange(found[0].getRow(),2).setValue(physical);else idx.appendRow([key,physical]);}
 function students5_(){return rows5_('Students',['studentId','帳戶JSON（含課堂密碼，請勿公開）']).map(r=>JSON.parse(r[1]));}
 function storeStudent5_(s){const sh=sheet5_('Students',['studentId','帳戶JSON（含課堂密碼，請勿公開）']),rows=sh.getDataRange().getValues(),i=rows.findIndex(r=>r[0]===s.studentId);if(i<0)sh.appendRow([s.studentId,JSON.stringify(s)]);else sh.getRange(i+1,1,1,2).setValues([[s.studentId,JSON.stringify(s)]]);}
-function publicStudent5_(s){return {studentId:s.studentId,name:s.name,classId:s.classId,grade:s.grade,active:s.active,passwordSet:!!s.password};}
+function publicStudent5_(s){return {studentId:s.studentId,name:s.name,classId:s.classId,grade:s.grade,active:s.active,studentNo:s.studentNo||'',passwordSet:!!s.password};}
 function log5_(action,id){sheet5_('AccountLog',['日期','操作','studentId']).appendRow([new Date().toISOString(),action,id]);}
 function normalizeConfig5_(input){const c=JSON.parse(JSON.stringify(input));c.classes=c.classes||{};if(c.classes['4N']){c.classes['4B']=Array.from(new Set([...(c.classes['4B']||[]),...c.classes['4N']]));delete c.classes['4N']}c.classes['4B']=c.classes['4B']||[];c.classes['6B']=c.classes['6B']||[];
  c.lessons=c.lessons||{};if(c.lessons['4N']){const list=c.lessons['4B']||(c.lessons['4B']=[]);for(const l of c.lessons['4N'])if(!list.some(x=>x.id===l.id))list.push(l);delete c.lessons['4N']}
@@ -596,6 +607,7 @@ function studentLogin5_(input){let s=students5_().find(x=>x.studentId===input.st
 function studentSave5_(p){const all=students5_();let s=p.studentId?all.find(x=>x.studentId===p.studentId):null;if(p.studentId&&!s)throw Error('找不到學生。');if(!s)s={studentId:'stu-'+Utilities.getUuid(),password:'',active:true,sessionVersion:1,lastLogin:'',resetAt:'',pin4ResetDone:true,aliases:[]};
  const name=String(p.name||s.name||'').trim(),classId=canonicalClass(p.classId||s.classId),grade=String(p.grade||s.grade||gradeOf(classId));if(!name||name.length>40||!/^\d+[A-Za-z0-9-]*$/.test(classId)||!/^\d+$/.test(grade))throw Error('姓名、班別或年級格式不正確。');if(all.some(x=>x.studentId!==s.studentId&&x.classId===classId&&x.name===name))throw Error('同班已有這個姓名。');
  s.aliases=s.aliases||[];if(s.name&&!(s.aliases||[]).some(a=>a.name===s.name&&a.classId===s.classId))s.aliases.push({name:s.name,classId:s.classId});if(s.name!==name||s.classId!==classId||s.grade!==grade)s.sessionVersion++;s.name=name;s.classId=classId;s.grade=grade;if(p.active!=null&&s.active!==!!p.active){s.active=!!p.active;s.sessionVersion++}if(p.clearPassword===true){s.password='';s.sessionVersion++;s.resetAt=new Date().toISOString()}else if(p.password!=null&&p.password!==''){if(!validStudentPassword(p.password))throw Error('密碼須為4位數字（可用0開頭）。');s.password=p.password;s.sessionVersion++;s.resetAt=new Date().toISOString()}
+ if(Object.prototype.hasOwnProperty.call(p,'studentNo'))s.studentNo=studentNumber21_(p.studentNo);checkStudentNumbers21_(all.filter(x=>x.studentId!==s.studentId).concat([s]));
  storeStudent5_(s);log5_(p.clearPassword?'清除學生密碼':p.password?'重設帳戶密碼':'更新帳戶',s.studentId);PropertiesService.getScriptProperties().setProperty('RANK_REV',Utilities.getUuid());return {student:publicStudent5_(s),students:students5_(),config:publicConfig5_()};}
 function lessonFor5_(c,session,id){return Object.values(c.lessons).flat().find(l=>l.id===id&&String(l.grade)===String(session.grade));}
 function start5V5_(p,s){if(!/^[\w-]{12,80}$/.test(p.id))throw Error('試卷編號格式不正確。');const existing=get5_('start:'+p.id);if(existing){if(existing.studentId!==s.studentId)throw Error('試卷不是你的。');return {start:existing}}
@@ -608,7 +620,7 @@ function prepareSubmit_(q){if(deleted6_((q.payload||{}).id))throw Error('這份�
  return {snap,groups,cells:graded};}
 function submit_(p,s,pre){const old=get5_('attempt:'+p.id);if(old){if(old.studentId!==s.studentId)throw Error('試卷不是你的。');ensureSummary5_(old);return {attempt:old}}if(!pre||!pre.snap)throw Error('交卷資料不完整。');const elapsed=Number(p.elapsed);const a=Object.assign({},pre.snap,{groups:pre.groups,cells:pre.cells,created:new Date().toISOString(),approved:false,version:1,elapsed:Number.isFinite(elapsed)?Math.max(0,Math.min(86400,elapsed)):0,timeValid:Number.isFinite(elapsed)&&elapsed>0,leaves:Math.max(0,Math.min(999,Number(p.leaves)||0)),hints:Math.max(0,Math.min(9999,Number(p.hints)||0)),pointsRule:5});a.fastFlag=a.elapsed/Math.max(1,marks(a).total)<.3;storeAttempt5_(a);return {attempt:a};}
 function review_(p){const a=get5_('attempt:'+p.id);if(!a)throw Error('找不到試卷。');if(a.version!==Number(p.version))throw Error('試卷已更新，請重新載入。');if(!Array.isArray(p.manual)||p.manual.length!==a.cells.length||p.manual.some(v=>![true,false,null].includes(v)))throw Error('改分格式不正確。');const changed=a.cells.some((c,i)=>c.manual!==p.manual[i]);a.cells.forEach((c,i)=>c.manual=p.manual[i]);if(changed)a.regraded=true;if(p.approve&&(marks(a).pending||a.incomplete))throw Error('仍有待核字或資料不完整，不能確認。');a.approved=!!p.approve;a.excluded=!!p.excluded;a.version++;storeAttempt5_(a);return {attempt:a};}
-function saveConfig5_(input){const c=normalizeConfig5_(input),old=config5_();if(input.stamp!==old.stamp)throw Error('教材已被更新，請重新載入再修改。');const ids=new Set();for(const k in c.lessons){if(!Array.isArray(c.lessons[k])||c.lessons[k].length>80)throw Error('課次格式不正確。');for(const l of c.lessons[k]){normalizeLesson6(l);if(l.paragraphs.length>50||l.memoryParagraphs.length>50||l.paragraphs.concat(l.memoryParagraphs).some(t=>typeof t!=='string'||t.length>3000))throw Error('段落格式不正確，每個段落最多3000字。');const unique=l.grade+':'+l.id;if(ids.has(unique))throw Error('同年級課次編號重複。');ids.add(unique);if(!/^[\w-]+$/.test(l.id)||typeof l.title!=='string'||!l.title.trim()||!Array.isArray(l.words)||!Array.isArray(l.sentences)||typeof l.paragraph!=='string'||l.words.concat(l.sentences,[l.paragraph]).some(t=>typeof t!=='string'||t.length>3000)||!['draft','published','archived'].includes(l.status))throw Error('教材格式不正確。');const prior=Object.values(old.lessons).flat().find(x=>x.id===l.id&&x.grade===l.grade);l.everPublished=!!prior?.everPublished||l.status==='published';if(Object.values(l.readings||{}).some(v=>typeof v!=='string'||v.length>80))throw Error('讀音覆寫每項最多80字。')}}
+function saveConfig5_(input){const c=normalizeConfig5_(input),old=config5_();if(input.stamp!==old.stamp)throw Error('教材已被更新，請重新載入再修改。');const ids=new Set();for(const k in c.lessons){if(!Array.isArray(c.lessons[k])||c.lessons[k].length>80)throw Error('課次格式不正確。');for(const l of c.lessons[k]){normalizeLesson6(l);for(const key of ['paragraphTitles','memoryParagraphTitles']){if(l[key]!=null&&(!Array.isArray(l[key])||l[key].length>50||l[key].some(t=>typeof t!=='string'||t.length>80)))throw Error('段落名稱每個最多80字。')}if(l.paragraphs.length>50||l.memoryParagraphs.length>50||l.paragraphs.concat(l.memoryParagraphs).some(t=>typeof t!=='string'||t.length>3000))throw Error('段落格式不正確，每個段落最多3000字。');const unique=l.grade+':'+l.id;if(ids.has(unique))throw Error('同年級課次編號重複。');ids.add(unique);if(!/^[\w-]+$/.test(l.id)||typeof l.title!=='string'||!l.title.trim()||!Array.isArray(l.words)||!Array.isArray(l.sentences)||typeof l.paragraph!=='string'||l.words.concat(l.sentences,[l.paragraph]).some(t=>typeof t!=='string'||t.length>3000)||!['draft','published','archived'].includes(l.status))throw Error('教材格式不正確。');const prior=Object.values(old.lessons).flat().find(x=>x.id===l.id&&x.grade===l.grade);l.everPublished=!!prior?.everPublished||l.status==='published';if(Object.values(l.readings||{}).some(v=>typeof v!=='string'||v.length>80))throw Error('讀音覆寫每項最多80字。')}}
  // Prevent deleting published history through the full-JSON editor.
  for(const l of Object.values(old.lessons).flat())if(l.everPublished&&!Object.values(c.lessons).flat().some(x=>x.id===l.id&&x.grade===l.grade))throw Error('已發布課次請改為封存，不能刪除。');
  const st=c.settings;if(typeof st.punctuationCounts!=='boolean'||typeof st.integrity!=='boolean'||!Number.isInteger(st.weeklyGoal)||st.weeklyGoal<1||st.weeklyGoal>50)throw Error('規則格式不正確。');if(!Number.isFinite(st.penalty)||st.penalty<0||st.penalty>10||!(st.rate>=.3&&st.rate<=1)||Object.values(st.weights).some(v=>!Number.isFinite(v)||v<0||v>10000))throw Error('評分設定不正確。');c.settings.scoreRule=6;c.settings.integrity=false;delete c.roster;put5_('configHistory:'+old.stamp,old);c.stamp='v5-'+Utilities.getUuid();put5_('config',c);return {config:publicConfig5_()};}
@@ -616,8 +628,8 @@ function board5_(s,p){const grade=s.role==='teacher'?String(p.grade||'4'):s.grad
 function dispatchV5_(q,pre){const p=q.payload||{},a=q.action;if(a==='bootstrap')return {config:publicConfig5_()};if(a==='teacherLogin'){const r=teacherLogin_(p.password);r.config=publicConfig5_();return r}if(a==='studentLogin')return studentLogin5_(p);const s=auth_(q.token);if(a==='leaderboard')return board5_(s,p);
  if(s.role==='student'){if(a==='start')return start5_(p,s);if(a==='submit')return submit_(p,s,pre);if(a==='myAttempts')return {attempts:summaries5_().filter(x=>x.studentId===s.studentId)};if(a==='attempt'){const t=get5_('attempt:'+p.id);if(!t||t.studentId!==s.studentId)throw Error('找不到自己的試卷。');return {attempt:t}}if(a==='myPassword'){const st=students5_().find(x=>x.studentId===s.studentId);if(st.password!==p.current||!validStudentPassword(p.password))throw Error('原密碼不符，或新密碼不是4位數字。');st.password=p.password;st.sessionVersion++;st.resetAt=new Date().toISOString();storeStudent5_(st);log5_('學生更改密碼',st.studentId);return {token:token_('student',{studentId:st.studentId,sessionVersion:st.sessionVersion})}}
  }
- auth_(q.token,'teacher');if(a==='teacherAttempts')return {attempts:summaries5_()};if(a==='attempt'){const t=get5_('attempt:'+p.id);if(!t)throw Error('找不到試卷。');return {attempt:t}}if(a==='review')return review_(p);if(a==='teacherStudents')return {students:students5_()};if(a==='saveStudent')return studentSave5_(p);if(a==='saveConfig')return saveConfig5_(p.config);if(a==='migrationReport')return {report:get5_('migrationReport')};if(a==='changePassword'){setPasswordHash_(p.password);return {ok:true}}if(a==='learningStats'){const stats={};for(const su of summaries5_().filter(x=>x.approved&&!x.excluded&&!x.incomplete).sort((a,b)=>a.created.localeCompare(b.created))){const t=get5_('attempt:'+su.id);for(const c of t.cells){if(!counted(c.expected,t.settings)||verdict(c)==null)continue;const key=t.studentId+':'+c.expected,x=stats[key]||(stats[key]={studentId:t.studentId,name:t.name,char:c.expected,wrong:0,recovered:false});if(verdict(c)===false){x.wrong++;x.recovered=false}else if(t.mode!=='review'&&x.wrong)x.recovered=true}}return {items:Object.values(stats).filter(x=>x.wrong)}}throw Error('未知操作或沒有權限。');}
-function doPost(e){let result,origin=PropertiesService.getScriptProperties().getProperty('ALLOWED_ORIGIN'),id='';try{if(!origin||e.parameter.origin!==origin)throw Error('網站網址未獲允許，請檢查 ALLOWED_ORIGIN。');id=String(e.parameter.requestId||'');if(!/^[\w-]{12,80}$/.test(id))throw Error('請求格式不正確。');if(String(e.parameter.payload||'').length>10000000)throw Error('試卷超過10MB，筆跡已保留本機，請聯絡老師匯出。');const q=JSON.parse(e.parameter.payload);let pre=null;if(q.action==='submit')pre=prepareSubmit_(q);const writes=['studentLogin','start','submit','review','saveStudent','saveConfig','myPassword','changePassword','teacherLogin','deleteAttempt'];const lock=LockService.getScriptLock(),locked=writes.includes(q.action);if(locked&&!lock.tryLock(25000))throw Error('正在收卷，請稍後重試。');try{result={ok:true,data:dispatch_(q,pre)}}finally{if(locked)lock.releaseLock()}}catch(err){result={ok:false,error:String(err.message||err)}}const msg=JSON.stringify({channel:'penroom-v1',requestId:id,result}).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');return HtmlService.createHtmlOutput('<html><head><meta charset="utf-8"></head><body><scr'+'ipt>window.top.postMessage('+msg+','+JSON.stringify(origin||'https://invalid.example')+');</scr'+'ipt></body></html>').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);}
+ auth_(q.token,'teacher');if(a==='teacherAttempts')return {attempts:summaries5_()};if(a==='attempt'){const t=get5_('attempt:'+p.id);if(!t)throw Error('找不到試卷。');return {attempt:t}}if(a==='review')return review_(p);if(a==='teacherStudents')return {students:students5_()};if(a==='saveStudent')return studentSave5_(p);if(a==='importStudents')return importStudents21_(p);if(a==='saveStudentNumbers')return saveStudentNumbers21_(p);if(a==='saveConfig')return saveConfig5_(p.config);if(a==='migrationReport')return {report:get5_('migrationReport')};if(a==='changePassword'){setPasswordHash_(p.password);return {ok:true}}if(a==='learningStats'){const stats={};for(const su of summaries5_().filter(x=>x.approved&&!x.excluded&&!x.incomplete).sort((a,b)=>a.created.localeCompare(b.created))){const t=get5_('attempt:'+su.id);for(const c of t.cells){if(!counted(c.expected,t.settings)||verdict(c)==null)continue;const key=t.studentId+':'+c.expected,x=stats[key]||(stats[key]={studentId:t.studentId,name:t.name,char:c.expected,wrong:0,recovered:false});if(verdict(c)===false){x.wrong++;x.recovered=false}else if(t.mode!=='review'&&x.wrong)x.recovered=true}}return {items:Object.values(stats).filter(x=>x.wrong)}}throw Error('未知操作或沒有權限。');}
+function doPost(e){let result,origin=PropertiesService.getScriptProperties().getProperty('ALLOWED_ORIGIN'),id='';try{if(!origin||e.parameter.origin!==origin)throw Error('網站網址未獲允許，請檢查 ALLOWED_ORIGIN。');id=String(e.parameter.requestId||'');if(!/^[\w-]{12,80}$/.test(id))throw Error('請求格式不正確。');if(String(e.parameter.payload||'').length>10000000)throw Error('試卷超過10MB，筆跡已保留本機，請聯絡老師匯出。');const q=JSON.parse(e.parameter.payload);let pre=null;if(q.action==='submit')pre=prepareSubmit_(q);const writes=['studentLogin','start','submit','review','saveStudent','saveConfig','myPassword','changePassword','teacherLogin','deleteAttempt','importStudents','saveStudentNumbers'];const lock=LockService.getScriptLock(),locked=writes.includes(q.action);if(locked&&!lock.tryLock(25000))throw Error('正在收卷，請稍後重試。');try{result={ok:true,data:dispatch_(q,pre)}}finally{if(locked)lock.releaseLock()}}catch(err){result={ok:false,error:String(err.message||err)}}const msg=JSON.stringify({channel:'penroom-v1',requestId:id,result}).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');return HtmlService.createHtmlOutput('<html><head><meta charset="utf-8"></head><body><scr'+'ipt>window.top.postMessage('+msg+','+JSON.stringify(origin||'https://invalid.example')+');</scr'+'ipt></body></html>').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);}
 /* Reconcile a completed object write if a spreadsheet summary write was interrupted. */
 function ensureSummary5_(a){const sh=sheet5_('V5Attempts',['id','摘要JSON']),rows=sh.getDataRange().getValues(),i=rows.findIndex(r=>r[0]===a.id);if(i>=0){try{if(JSON.parse(rows[i][1]).version===a.version)return}catch(e){}}
  const summary=JSON.parse(JSON.stringify(a));summary.metrics=marks(a);for(const k of ['cells','groups','pages','readings','settings'])delete summary[k];if(i<0)sh.appendRow([a.id,JSON.stringify(summary)]);else sh.getRange(i+1,1,1,2).setValues([[a.id,JSON.stringify(summary)]]);PropertiesService.getScriptProperties().setProperty('RANK_REV',Utilities.getUuid());}
@@ -701,6 +713,30 @@ function resetAllStudentPasswordsTo4Digits(){
   if(cleared){sh.getRange(2,1,n,2).setValues(values);log5_('轉用4位數字：清除學生密碼 '+cleared+' 個','')}
   const report={cleared,total,note:'學生下次登入自行設定4位數字；教師密碼及成績不變。'};Logger.log(JSON.stringify(report));return report;
  }finally{lock.releaseLock()}
+}
+
+/* v2.1 classroom: batch import and optional class numbers. Teacher-only dispatch. */
+function studentNumber21_(v){if(v==null||v==='')return '';const n=Number(v);if(!/^\d{1,3}$/.test(String(v))||!Number.isInteger(n)||n<1||n>999)throw Error('學號請填1至999，或留空。');return String(n)}
+function writeStudentBatch21_(all){const sh=sheet5_('Students',['studentId','帳戶JSON（含課堂密碼，請勿公開）']);if(all.length)sh.getRange(2,1,all.length,2).setValues(all.map(s=>[s.studentId,JSON.stringify(s)]))}
+function checkStudentNumbers21_(all){const seen=new Set();for(const s of all){if(!s.studentNo)continue;const k=s.classId+':'+s.studentNo;if(seen.has(k))throw Error(s.classId+' 的學號 '+s.studentNo+' 重複，請檢查後再保存。');seen.add(k)}}
+function importStudents21_(p){
+ const classId=canonicalClass(String(p.classId||'').trim().toUpperCase()),grade=String(p.grade||gradeOf(classId));
+ if(!/^\d+[A-Z0-9-]*$/.test(classId)||!/^\d+$/.test(grade)||+grade<1||+grade>12)throw Error('班別或年級不正確。');
+ const entries=p.entries||(Array.isArray(p.names)?p.names.map(name=>({name})):null);
+ if(!Array.isArray(entries)||!entries.length||entries.length>200)throw Error('每批請輸入1至200位學生。');
+ const clean=entries.map(e=>{if(!e||typeof e.name!=='string'||!e.name.trim()||e.name.trim().length>40||/[\t\r\n]/.test(e.name))throw Error('姓名格式不正確。');return {name:e.name.trim(),studentNo:studentNumber21_(e.studentNo)}});
+ const all=students5_(),skipped=[],seen=new Set();let added=0,updated=0;
+ for(const e of clean){if(seen.has(e.name)){skipped.push(e.name);continue}seen.add(e.name);const s=all.find(x=>x.classId===classId&&x.name===e.name);
+ if(s){if(e.studentNo&&s.studentNo!==e.studentNo){s.studentNo=e.studentNo;updated++}else skipped.push(e.name);continue}
+ all.push({studentId:'stu-'+Utilities.getUuid(),name:e.name,classId,grade,studentNo:e.studentNo,password:'',active:true,sessionVersion:1,lastLogin:'',resetAt:'',pin4ResetDone:true,aliases:[]});added++;
+ }
+ checkStudentNumbers21_(all);if(added||updated){writeStudentBatch21_(all);log5_('批量匯入：新增'+added+'，更新學號'+updated,classId)}
+ return {added,updated,skipped,students:all,config:publicConfig5_()};
+}
+function saveStudentNumbers21_(p){
+ if(!Array.isArray(p.entries)||p.entries.length>500)throw Error('學號名單不正確。');const all=students5_(),seen=new Set();
+ for(const e of p.entries){if(!e||seen.has(e.studentId))throw Error('學生編號重複。');seen.add(e.studentId);const s=all.find(x=>x.studentId===e.studentId);if(!s)throw Error('找不到學生，請重新載入。');s.studentNo=studentNumber21_(e.studentNo)}
+ checkStudentNumbers21_(all);writeStudentBatch21_(all);log5_('批量更新學號',String(p.entries.length));return {students:all,config:publicConfig5_()};
 }
 </script>
 
@@ -1129,10 +1165,10 @@ function normalizeLesson6(l){
 }
 function buildGroups(l,mode,scope){
  const p=Array.isArray(l.paragraphs)?l.paragraphs:(l.paragraph?[l.paragraph]:[]),m=Array.isArray(l.memoryParagraphs)?l.memoryParagraphs:(l.paragraph?[l.paragraph]:[]),g=[];
- if(mode==='memory')return m.map((text,i)=>({key:'m'+i,kind:'背默',text}));
+ if(mode==='memory')return m.map((text,i)=>({key:'m'+i,kind:'背默',text,title:(l.memoryParagraphTitles||[])[i]||'背默段落 '+(i+1)}));
  if(scope==='all'||scope==='words')(l.words||[]).forEach((text,i)=>g.push({key:'w'+i,kind:'詞語',text}));
  if(scope==='all'||scope==='sentences')(l.sentences||[]).forEach((text,i)=>g.push({key:'s'+i,kind:'句子',text}));
- if(scope==='all'||scope==='paragraph')p.forEach((text,i)=>g.push({key:'p'+i,kind:'段落',text}));
+ if(scope==='all'||scope==='paragraph')p.forEach((text,i)=>g.push({key:'p'+i,kind:'段落',text,title:(l.paragraphTitles||[])[i]||'讀默段落 '+(i+1)}));
  return g;
 }
 function selectParagraphGroups21(groups,keys){
@@ -1173,7 +1209,7 @@ function pwField(id,label){return `<label class="f" for="${id}">${label}</label>
 function wireEyes(host=document){host.querySelectorAll('[data-eye]').forEach(b=>b.onclick=()=>{const i=$(b.dataset.eye);i.type=i.type==='password'?'text':'password';b.setAttribute('aria-pressed',String(i.type==='text'))})}
 function loginViewPre21(){const roster=cfg.roster||[],keys=Object.keys(cfg.classes).sort();if(!keys.includes(loginClass))loginClass=keys[0]||'4B';let picked='';
  $('app').innerHTML=`<section class="login"><div class="card login-card"><div class="art">${MASCOT(120,170,'bob')}<div class="ltitle">筆尖<span>默書室</span></div></div><form class="lform" id="login5"><h1>學生登入</h1><label class="f">① 選班別</label><select class="in" id="class5">${keys.map(k=>`<option>${esc(k)}</option>`).join('')}</select><label class="f">② 選姓名</label><div class="names" id="names"></div><div id="password5"></div><button class="btn pri lg" id="go" disabled>進入默書室</button>${!endpoint?'<div class="note">請先由老師連接後台，或按「老師」設定網站。學生帳戶需要後台核對。</div>':''}</form></div></section>`;
- $('class5').value=loginClass;const fill=()=>{const list=roster.filter(s=>s.active&&s.classId===loginClass);$('names').innerHTML=list.map(s=>`<button type="button" class="nm ${picked===s.studentId?'on':''}" data-st="${esc(s.studentId)}">${avatar(s.name)}${esc(s.name)}</button>`).join('')||'<p class="muted">此班暫無已啟用學生。</p>';$('names').querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{picked=b.dataset.st;fill();const s=roster.find(x=>x.studentId===picked);$('password5').innerHTML=`<div class="step">③ ${s.passwordSet?'輸入密碼':'首次設定自己的密碼'}</div>`+pwField('studentPw','密碼')+(!s.passwordSet?pwField('confirmPw','再輸入一次'):'');wireEyes();$('go').disabled=false;$('studentPw').focus()})};fill();$('class5').onchange=e=>{loginClass=e.target.value;picked='';$('password5').innerHTML='';$('go').disabled=true;fill()};
+ $('class5').value=loginClass;const fill=()=>{const list=roster.filter(s=>s.active&&s.classId===loginClass).sort(studentOrder21);$('names').innerHTML=list.map(s=>`<button type="button" class="nm ${picked===s.studentId?'on':''}" data-st="${esc(s.studentId)}">${avatar(s.name)}<span>${s.studentNo?esc(s.studentNo)+' · ':''}${esc(s.name)}</span></button>`).join('')||'<p class="muted">此班暫無已啟用學生。</p>';$('names').querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{picked=b.dataset.st;fill();const s=roster.find(x=>x.studentId===picked);$('password5').innerHTML=`<div class="step">③ ${s.passwordSet?'輸入密碼':'首次設定自己的密碼'}</div>`+pwField('studentPw','密碼')+(!s.passwordSet?pwField('confirmPw','再輸入一次'):'');wireEyes();$('go').disabled=false;$('studentPw').focus()})};fill();$('class5').onchange=e=>{loginClass=e.target.value;picked='';$('password5').innerHTML='';$('go').disabled=true;fill()};
  $('login5').onsubmit=async e=>{e.preventDefault();const s=roster.find(x=>x.studentId===picked);if(!s)return;const password=$('studentPw').value;if(!validStudentPassword(password))return toast('請輸入4位數字，例如0123。','bad');$('go').disabled=true;try{const r=await request('studentLogin',{studentId:picked,password,setup:!s.passwordSet,confirm:$('confirmPw')?.value});studentToken=r.token;user=r.user;teacherPreview=false;cfg=localConfig5(r.config);save('-config',cfg);await restoreInk5();migrateLocal5(r.aliases);for(const a of records.filter(owns))await persistRecord5(a);rankGrade=user.grade;ownSummaries=[];ownLoadAt6=0;screen='home';render();loadOwn5();refreshBoard()}catch(err){toast(err.message,'bad');$('go').disabled=false;if(/已設定|首次設定/.test(err.message)){const r=await request('bootstrap');cfg=r.config;render()}}};}
 async function loadOwn5V5(){if(!user||teacherPreview||!studentToken)return;try{const r=await request('myAttempts',{},studentToken);ownSummaries=r.attempts;drawProgress5()}catch(e){if($('progress5'))$('progress5').textContent='連線後顯示已確認的進步紀錄。'}}
 function logout5(){if(screen==='writing'){pauseClock(true);persistDraft()}user=null;studentToken='';teacherPreview=false;rankData=null;ownSummaries=[];screen='login';render()}
@@ -1241,11 +1277,13 @@ function writingView(){writingViewBase();const a=attempt,app=$('app');if(!a||!ap
  $('later')?.insertAdjacentHTML('afterend','<p class="small muted" style="margin:6px 0 0;text-align:center">草稿保留在這部裝置，請留意儲存提示</p>');
  const sub=$('sub');if(sub){const blank=a.cells.filter(c=>!c.strokes.length).length,zone=document.createElement('div');zone.className='ui21-submitzone';zone.innerHTML=`<p class="small muted">${a.mode==='review'?'溫習完成後可以對照參考字。':'整份共 '+a.cells.length+' 格，還有 <b>'+blank+'</b> 格未寫。交卷後才會顯示答案。'}</p>`;sub.replaceWith(zone);zone.append(sub);sub.innerHTML=ico('check')+(a.mode==='review'?' 完成溫習':' 交整份卷（全部頁）')}
  if(pageIndex===a.pages.length-1&&$('next'))$('next').innerHTML=ico('check')+' 交卷';
+ const title=a.groups[p.group]?.title;if(title){const el=document.createElement('p');el.className='note';el.textContent=title;app.querySelector('.ex')?.before(el)}
+ if(a.mode==='review')addStudyLinks21(app, p.indices.map(i=>a.cells[i].expected));
 }
 function renderPad(){stopAudio();renderPadBase();if(!padOpen||!attempt)return;const a=attempt,p=a.pages[pageIndex],el=$('pad');selectedCell=p.indices[padPos];const top=el.querySelector('.pad-top'),side=el.querySelector('.pad-side');if(!top||!side)return;top.querySelector(':scope > span')?.remove();$('pdClose').innerHTML=ico('back')+' 返回整頁';$('pdClose').setAttribute('aria-label','返回整頁，看全部格子');$('pdListen')?.remove();
  if(a.mode!=='memory'){const grp=document.createElement('div');grp.className='ui21-padread';grp.innerHTML=`<button class="btn sky" id="pdCellRead">${ico('sound')} 讀這一格</button><button class="btn sky" id="pdListen">${ico('sound')} ${p.kind==='詞語'?'讀這個詞':'讀本句／小段'}</button>`;side.prepend(grp);$('pdCellRead').onclick=()=>readCell5(selectedCell,$('pdCellRead'));$('pdListen').onclick=()=>readPage5($('pdListen'))}else side.insertAdjacentHTML('afterbegin','<p class="small muted" style="margin:0">🧠 背默：請靠記憶寫。</p>');
  side.querySelector('.pad-tools')?.insertAdjacentHTML('beforebegin','<small id="padTool21" aria-live="polite"></small>');for(const [id,label] of [['pdPen','書寫'],['pdEr','擦掉筆跡'],['pdUndo','復原上一步'],['pdClr','清空這一格']])$(id)?.setAttribute('aria-label',label);
- const lastCell=padPos===p.indices.length-1,lastPage=pageIndex===a.pages.length-1,nx=$('pdNext');if(nx&&lastCell)nx.innerHTML=lastPage?ico('check')+' 寫完，交卷':'下一頁 '+ico('next');el.querySelectorAll('.mini').forEach((b,n)=>{if(n===padPos)b.setAttribute('aria-current','true');else b.removeAttribute('aria-current')});setTool(tool);fitPadUI();
+ const lastCell=padPos===p.indices.length-1,lastPage=pageIndex===a.pages.length-1,nx=$('pdNext');if(nx&&lastCell)nx.innerHTML=lastPage?ico('check')+' 寫完，交卷':'下一頁 '+ico('next');el.querySelectorAll('.mini').forEach((b,n)=>{if(n===padPos)b.setAttribute('aria-current','true');else b.removeAttribute('aria-current')});if(a.mode==='review'){const btn=document.createElement('button');btn.className='btn sky sm';btn.textContent='📖 查這一字的香港正寫 ↗';btn.onclick=()=>openEDB21(a.cells[selectedCell].expected);btn.disabled=!/^[\u3400-\u9fff]$/u.test(a.cells[selectedCell].expected);side.prepend(btn)}setTool(tool);fitPadUI();
 }
 function closePad(silent){stopAudio();closePadBase(silent);$('app').inert=false;document.querySelector('.top').inert=false;if(!silent&&screen==='writing'){writingView();document.querySelector('[data-c="'+padPos+'"]')?.focus({preventScroll:true})}}
 function goPage(i){stopAudio();selectedCell=attempt?.pages[i]?.indices[0]||0;goPageBase(i)}
@@ -1300,14 +1338,14 @@ async function tStudents5(useSaved21=false){const body=$('tBody'),token=teacherT
  }catch(e){if(screen!=='teacher'||teacherToken!==token||teacherTab!=='students'||!body.isConnected)return;if($('tBody'))$('tBody').innerHTML=`<p class="ui21-err">未能載入學生：${esc(e.message)}</p><button class="btn sm" id="stuRetry21" style="margin-top:10px">${ico('refresh')} 再試一次</button>`;if($('stuRetry21'))$('stuRetry21').onclick=()=>tStudents5()}
 }
 function studentEditor5(s){
- modal(`<form id="studentEditor"><label class="f">姓名</label><input class="in" id="stName" value="${esc(s?.name||'')}" maxlength="40" required><div class="g2"><div><label class="f">年級</label><input class="in" id="stGrade" type="number" min="1" max="12" value="${esc(s?.grade||'4')}" required></div><div><label class="f">班別</label><input class="in" id="stClass" value="${esc(s?.classId||'4B')}" required></div></div><label class="f"><input type="checkbox" id="stActive" ${s?.active!==false?'checked':''}> 啟用帳戶</label>${pwField('stPassword','設定／重設4位數字密碼（留空保留原密碼）')}${s?'<label class="f"><input type="checkbox" id="stClearPassword"> 清除密碼，讓學生下次登入重新設定</label>':''}<p class="small muted">例如0123。新學生留空：首次登入自行設定。</p><p id="stError" role="alert" style="color:var(--bad)" hidden></p><button type="submit" id="stSave" class="btn pri" style="margin-top:14px">保存</button></form>`,s?'編輯學生帳戶':'加入學生');
+ modal(`<form id="studentEditor"><label class="f">姓名</label><input class="in" id="stName" value="${esc(s?.name||'')}" maxlength="40" required><div class="g2"><div><label class="f">年級</label><input class="in" id="stGrade" type="number" min="1" max="12" value="${esc(s?.grade||'4')}" required></div><div><label class="f">班別</label><input class="in" id="stClass" value="${esc(s?.classId||'4B')}" required></div></div><label class="f" for="stNo21">學號（留空排在後面）</label><input class="in" id="stNo21" inputmode="numeric" maxlength="3" value="${esc(s?.studentNo||'')}"><label class="f"><input type="checkbox" id="stActive" ${s?.active!==false?'checked':''}> 啟用帳戶</label>${pwField('stPassword','設定／重設4位數字密碼（留空保留原密碼）')}${s?'<label class="f"><input type="checkbox" id="stClearPassword"> 清除密碼，讓學生下次登入重新設定</label>':''}<p class="small muted">例如0123。新學生留空：首次登入自行設定。</p><p id="stError" role="alert" style="color:var(--bad)" hidden></p><button type="submit" id="stSave" class="btn pri" style="margin-top:14px">保存</button></form>`,s?'編輯學生帳戶':'加入學生');
  $('stPassword').required=false;wireEyes();if($('stClearPassword'))$('stClearPassword').onchange=()=>{$('stPassword').disabled=$('stClearPassword').checked};
  $('studentEditor').onsubmit=async e=>{e.preventDefault();const btn=$('stSave'),err=$('stError');if(btn.disabled)return;
  const password=$('stPassword').value,clearPassword=!!$('stClearPassword')?.checked;
  if(!clearPassword&&password&&!validStudentPassword(password)){err.textContent='請輸入剛好4位數字。';err.hidden=false;return}
  if(clearPassword&&!confirm('清除這位學生的密碼？下次登入將自行設定新密碼。'))return;
  btn.disabled=true;btn.textContent='正在保存…';err.hidden=true;
- try{const r=await request('saveStudent',{studentId:s?.studentId,name:$('stName').value,classId:$('stClass').value,grade:$('stGrade').value,active:$('stActive').checked,password:clearPassword?'':password,clearPassword},teacherToken);
+ try{const r=await request('saveStudent',{studentId:s?.studentId,studentNo:$('stNo21').value,name:$('stName').value,classId:$('stClass').value,grade:$('stGrade').value,active:$('stActive').checked,password:clearPassword?'':password,clearPassword},teacherToken);
  if(r.config){cfg=localConfig5(r.config);save('-config',cfg)}
  if(Array.isArray(r.students)){teacherStudents=r.students;closeModal();tStudents5(true)}else{closeModal();tStudents5()}
  toast('帳戶已保存。','good');
@@ -1614,12 +1652,13 @@ function refreshLessonGradeMenu(){
  function tContent(){
  if(!cEdit)cEdit=clone(cfg);Object.values(cEdit.lessons).flat().forEach(normalizeLesson6);tContentV5();refreshLessonGradeMenu();const l=cEdit.lessons[cClass]?.[cLesson];if(!l||!$('eP'))return;
  $('eP').insertAdjacentHTML('beforebegin',`<p class="note blue">已載入 ${l.paragraphs.length} 個讀默段落；其中 ${new Set(l.paragraphs.map(p=>p.trim())).size} 個不同內容。相同內容會保留，隨機題庫只算一次。</p>`);
- const first=$('eP');first.setAttribute('data-readparagraph','0');first.previousElementSibling.textContent='讀默段落 1';
+ const first=$('eP');first.setAttribute('data-readparagraph','0');
  first.insertAdjacentHTML('afterend',`${l.paragraphs.slice(1).map((p,i)=>`<label class="f">讀默段落 ${i+2}</label><textarea class="in" data-readparagraph="${i+1}" rows="5">${esc(p)}</textarea>`).join('')}<button class="btn sky sm" id="addReadParagraph6" style="margin-top:10px">＋ 新增讀默段落</button><p class="small muted">每個框是一個完整段落；清空該框即可移除。</p><h3>背默段落（獨立題庫）</h3>${(l.memoryParagraphs.length?l.memoryParagraphs:['']).map((p,i)=>`<label class="f">背默段落 ${i+1}</label><textarea class="in" data-memoryparagraph="${i}" rows="5">${esc(p)}</textarea>`).join('')}<button class="btn sky sm" id="addMemoryParagraph6" style="margin-top:10px">＋ 新增背默段落</button><p class="small muted">背默內容不會混入整份讀默或隨機讀默。</p>`);
+ for(const [attr,key,label] of [['data-readparagraph','paragraphTitles','讀默'],['data-memoryparagraph','memoryParagraphTitles','背默']])document.querySelectorAll('['+attr+']').forEach((el,i)=>{el.insertAdjacentHTML('beforebegin',`<label class="f" for="${key}${i}">${label}段落 ${i+1} 名稱</label><input class="in" id="${key}${i}" data-paragraph-title="${attr}:${i}" maxlength="80" placeholder="例如：第八課・第二段" value="${esc((l[key]||[])[i]||'')}">`)});
  $('addReadParagraph6').onclick=()=>{collect();l.paragraphs.push('');tContent()};$('addMemoryParagraph6').onclick=()=>{collect();l.memoryParagraphs.push('');tContent()};
 }
 function collect(){
- const l=cEdit?.lessons[cClass]?.[cLesson];if(!l||!$('eT'))return;const old=JSON.stringify([l.words,l.sentences,l.paragraphs,l.memoryParagraphs]);collectV5();l.paragraphs=Array.from(document.querySelectorAll('[data-readparagraph]'),e=>e.value.trim()).filter(Boolean);l.memoryParagraphs=Array.from(document.querySelectorAll('[data-memoryparagraph]'),e=>e.value.trim()).filter(Boolean);l.paragraph=l.paragraphs[0]||'';
+ const l=cEdit?.lessons[cClass]?.[cLesson];if(!l||!$('eT'))return;const old=JSON.stringify([l.words,l.sentences,l.paragraphs,l.memoryParagraphs]);collectV5();for(const [attr,key,titles] of [['data-readparagraph','paragraphs','paragraphTitles'],['data-memoryparagraph','memoryParagraphs','memoryParagraphTitles']]){const rows=Array.from(document.querySelectorAll('['+attr+']'),(e,i)=>({text:e.value.trim(),title:document.querySelector('[data-paragraph-title="'+attr+':'+i+'"]')?.value.trim()||''})).filter(x=>x.text);l[key]=rows.map(x=>x.text);l[titles]=rows.map(x=>x.title)};l.paragraph=l.paragraphs[0]||'';
  if(old!==JSON.stringify([l.words,l.sentences,l.paragraphs,l.memoryParagraphs])){l.readings={};if($('readings5'))$('readings5').innerHTML='<p>教材已改動，請重新預覽及設定讀音位置。</p>'}
 }
 function tRules(){tRulesV5();$('rIntegrity')?.closest('label')?.remove();$('rPen')?.previousElementSibling?.remove();$('rPen')?.remove();$('tBody').querySelector('p').textContent='新版固定：詞語30、句子30、段落／背默40；整份各部分相加100。隨機詞語每正確字3分，隨機句子／段落每字2分。舊卷沿用舊規則。';
@@ -1646,7 +1685,7 @@ function renderParagraphChoices21(host,update){
  const choice=paragraphChoice21();if(!choice)return;
  const box=document.createElement('section');box.className='paragraph-picker21';host.before(box);
  const draw=()=>{const selected=paragraphChoices21.get(choice.signature);
- box.innerHTML='<h3>選擇今次練習的段落</h3><p class="small muted">預設選第一段，可選多段；只計算已選內容。段落部分滿分仍為40。</p><div class="row" style="margin-bottom:12px"><button class="btn sm" data-pick-all>全選</button><button class="btn sm" data-pick-none>清除選擇</button></div><div class="paragraph-options21">'+choice.parts.map((g,i)=>`<button type="button" class="paragraph-choice21 ${selected.includes(g.key)?'on':''}" data-pick-paragraph="${esc(g.key)}" aria-pressed="${selected.includes(g.key)}"><b>${g.kind==='背默'?'背默':'讀默'}段落 ${Number(g.key.slice(1))+1}</b><small>${Array.from(g.text).filter(c=>!/^\s$/u.test(c)).length} 格</small><span>${selected.includes(g.key)?'✓ 已選擇':'點選這一段'}</span></button>`).join('')+'</div>';
+ box.innerHTML='<h3>選擇今次練習的段落</h3><p class="small muted">預設選第一段，可選多段；只計算已選內容。段落部分滿分仍為40。</p><div class="row" style="margin-bottom:12px"><button class="btn sm" data-pick-all>全選</button><button class="btn sm" data-pick-none>清除選擇</button></div><div class="paragraph-options21">'+choice.parts.map((g,i)=>`<button type="button" class="paragraph-choice21 ${selected.includes(g.key)?'on':''}" data-pick-paragraph="${esc(g.key)}" aria-pressed="${selected.includes(g.key)}"><b>${esc(g.title||(g.kind==='背默'?'背默':'讀默')+'段落 '+(Number(g.key.slice(1))+1))}</b><small>${Array.from(g.text).filter(c=>!/^\s$/u.test(c)).length} 格</small><span>${selected.includes(g.key)?'✓ 已選擇':'點選這一段'}</span></button>`).join('')+'</div>';
  box.querySelectorAll('[data-pick-paragraph]').forEach(button=>button.onclick=()=>{const key=button.dataset.pickParagraph;paragraphChoices21.set(choice.signature,selected.includes(key)?selected.filter(k=>k!==key):[...selected,key]);draw();update()});
  box.querySelector('[data-pick-all]').onclick=()=>{paragraphChoices21.set(choice.signature,choice.parts.map(g=>g.key));draw();update()};
  box.querySelector('[data-pick-none]').onclick=()=>{paragraphChoices21.set(choice.signature,[]);draw();update()};};draw();
@@ -1706,49 +1745,6 @@ function loginView(){loginViewPre21();const form=$('login5');if(!form)return;con
  filter()}
 function refGlyph(ch){return `<b class="reference21" lang="zh-HK">${esc(ch)}</b>`}
 async function loadChar(ch){return null}
-function bulkStudents21(){const defClass=ui21StuClass!=='all'?ui21StuClass:'4B';
- modal(`<div id="bulk21"><ol class="ui21-steps"><li>填寫<b>年級</b>及<b>班別</b>（例如 4 和 4B）。</li><li>貼上姓名，<b>每行一位</b>。可從試算表複製<b>單一姓名欄</b>，每批最多 200 位。</li><li>看清楚下面的預覽，再按加入。</li></ol>
-  <div class="g2"><div><label class="f" for="bulkGrade21">年級</label><input class="in" id="bulkGrade21" type="number" min="1" max="12" inputmode="numeric" value="${esc(gradeOf(defClass))}"></div>
-  <div><label class="f" for="bulkClass21">班別</label><input class="in" id="bulkClass21" value="${esc(defClass)}" autocapitalize="characters" autocomplete="off"></div></div>
-  <label class="f" for="bulkNames21">姓名（每行一位）</label><textarea class="in" id="bulkNames21" rows="9" placeholder="陳小明&#10;李小美&#10;Ahmed Khan"></textarea>
-  <div class="ui21-preview" id="bulkPreview21" aria-live="polite">請貼上姓名。</div>
-  <p class="ui21-err" id="bulkErr21" role="alert" hidden></p>
-  <p class="small muted">同班同名會跳過；已有帳戶的密碼及成績不會被覆蓋。新生首次登入時自行設定密碼。</p>
-  <button class="btn pri block" id="bulkSave21" disabled>批量加入</button></div>`,'📋 批量匯入學生');
- let gradeTouched=false,busy=false,plan=null;
- const parse=()=>{const raw=$('bulkNames21').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-  const classId=canonicalClass($('bulkClass21').value.trim().toUpperCase()),grade=String($('bulkGrade21').value).trim();
-  const existing=new Set(teacherStudents.filter(s=>s.classId===classId).map(s=>s.name)),seen=new Set(),add=[],dupOld=[],dupBatch=[];
-  const bad=raw.filter(n=>n.length>40||/\t/.test(n));
-  for(const n of raw){if(existing.has(n)){dupOld.push(n);continue}if(seen.has(n)){dupBatch.push(n);continue}seen.add(n);add.push(n)}
-  const errs=[];if(!/^\d+[A-Z0-9-]*$/.test(classId))errs.push('班別要以數字開頭，例如 4B。');if(!/^\d+$/.test(grade)||Number(grade)<1||Number(grade)>12)errs.push('年級須為 1 至 12 的整數。');
-  if(raw.length>200)errs.push(`共 ${raw.length} 行，每批最多 200 位，請分批。`);
-  if(bad.length)errs.push(`有 ${bad.length} 行超過 40 字或含 Tab（可能複製了多欄），例如「${bad[0].slice(0,20)}」。請只複製姓名一欄。`);
-  return {raw,classId,grade,add,dupOld,dupBatch,errs}};
- const preview=()=>{plan=parse();const p=plan,box=$('bulkPreview21'),btn=$('bulkSave21');
-  if(!p.raw.length){box.textContent='請貼上姓名。';btn.disabled=true;btn.textContent='批量加入';return}
-  box.innerHTML=`<b>將加入 ${p.add.length} 位到 ${esc(p.classId||'？')}</b>（${esc(p.grade)} 年級）`+
-   (p.dupOld.length?`<br>已在此班 ${p.dupOld.length} 位，會跳過：${esc(p.dupOld.slice(0,8).join('、'))}${p.dupOld.length>8?'…':''}`:'')+
-   (p.dupBatch.length?`<br>本批重複 ${p.dupBatch.length} 行，會跳過：${esc([...new Set(p.dupBatch)].slice(0,8).join('、'))}`:'')+
-   (p.add.length?`<br><span class="small muted">例如：${esc(p.add.slice(0,6).join('、'))}${p.add.length>6?' 等':''}</span>`:'')+
-   (p.errs.length?`<br><b style="color:var(--bad)">⚠ ${p.errs.map(esc).join('<br>⚠ ')}</b>`:'');
-  btn.disabled=busy||!!p.errs.length||!p.add.length;
-  btn.textContent=p.errs.length?'請先修正上面的問題':p.add.length?`加入 ${p.add.length} 位學生`:'沒有新學生需要加入'};
- $('bulkNames21').oninput=preview;$('bulkGrade21').oninput=()=>{gradeTouched=true;preview()};
- $('bulkClass21').oninput=()=>{if(!gradeTouched)$('bulkGrade21').value=gradeOf(canonicalClass($('bulkClass21').value.trim().toUpperCase()));preview()};
- $('bulkSave21').onclick=async()=>{if(busy||!plan||plan.errs.length||!plan.add.length)return;busy=true;const b=$('bulkSave21');
-  b.disabled=true;b.setAttribute('aria-busy','true');b.innerHTML='<span class="ui21-spin"></span> 正在一次匯入…';$('bulkErr21').hidden=true;ui21Inline='bulkErr21';
-  try{const r=await request('importStudents',{classId:plan.classId,grade:plan.grade,names:plan.raw},teacherToken);
-   teacherStudents=r.students;cfg=localConfig5(r.config);save('-config',cfg);
-   if(teacherTab==='students')tStudents5(true);
-   const box=$('bulk21');if(box){box.innerHTML=`<p class="ui21-ok">✓ 已加入 ${r.added} 位到 ${esc(plan.classId)}</p>`+
-    (r.skipped.length?`<p>跳過 ${r.skipped.length} 個重複姓名：${esc(r.skipped.slice(0,20).join('、'))}${r.skipped.length>20?'…':''}</p>`:'<p class="muted">沒有重複姓名。</p>')+
-    `<p class="small muted">新生首次登入時自行設定 8 位英數密碼。</p><button class="btn pri block" id="bulkDone21">完成</button>`;$('bulkDone21').onclick=closeModal;$('bulkDone21').focus()}
-   toast(`已加入 ${r.added} 位，跳過 ${r.skipped.length} 個重複姓名。`,'good')}
-  catch(e){toast(e.message,'bad');if(b.isConnected){b.removeAttribute('aria-busy');busy=false;preview()}}
-  finally{ui21Inline=null;busy=false}};
- setTimeout(()=>$('bulkNames21')?.focus(),50);
-}
 
 function uiArt(kind){const paths={book:'<path d="M23 29c15-6 26-3 37 5 11-8 22-11 37-5v57c-15-6-26-3-37 5-11-8-22-11-37-5z"/><path d="M60 34v57M33 44l15 3M33 56l15 3M72 47l15-3M72 59l15-3"/>',grow:'<path d="M61 93V54M61 70c-22 0-32-14-30-32 20 0 30 13 30 32ZM61 55c0-22 13-33 32-31 0 19-12 31-32 31ZM37 95h48"/>',words:'<rect x="17" y="34" width="37" height="44" rx="8"/><rect x="66" y="34" width="37" height="44" rx="8"/><path d="M35 43v26M25 56h20M85 43v26M75 56h20"/>',sentences:'<rect x="18" y="26" width="84" height="66" rx="10"/><path d="M31 43h10m12 0h10m12 0h10M31 58h10m12 0h10m12 0h10M31 73h28"/><circle cx="78" cy="73" r="3"/>',paragraph:'<rect x="24" y="17" width="72" height="88" rx="10"/><path d="M48 36h33M37 49h44M37 62h44M37 75h44M37 88h27"/>',all:'<rect x="33" y="15" width="68" height="80" rx="10"/><rect x="19" y="29" width="68" height="80" rx="10" fill="var(--art-paper,#fff)"/><path d="M33 48h39M33 62h39M33 76h25M33 90h32"/>',review:'<path d="M14 60s17-27 46-27 46 27 46 27-17 27-46 27S14 60 14 60Z"/><circle cx="60" cy="60" r="12"/>',dictation:'<path d="M32 66V49a28 28 0 0 1 56 0v17M28 58h12v26H28a8 8 0 0 1-8-8V66a8 8 0 0 1 8-8ZM92 58H80v26h12a8 8 0 0 0 8-8V66a8 8 0 0 0-8-8ZM86 86q-5 14-26 14"/>',memory:'<path d="M61 24v73M61 29c-18-15-32 1-30 14-21 9-16 32-3 35-1 19 23 25 33 13M61 29c18-15 32 1 30 14 21 9 16 32 3 35 1 19-23 25-33 13M32 44q15-3 15 13M30 79q4-14 17-10M91 44q-15-3-15 13M92 79q-4-14-17-10"/>',random:'<rect x="24" y="24" width="72" height="72" rx="18"/><circle cx="43" cy="43" r="3"/><circle cx="77" cy="43" r="3"/><circle cx="60" cy="60" r="3"/><circle cx="43" cy="77" r="3"/><circle cx="77" cy="77" r="3"/>'};return `<svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[kind]||paths.book}</svg>`}
 function uiMedal(rank){return rank>3?String(rank):`<svg viewBox="0 0 36 48" aria-hidden="true" width="32" height="43"><path d="m9 29-3 15 10-5 2-8m9-2 3 15-10-5-2-8" fill="currentColor" opacity=".35"/><circle cx="18" cy="24" r="13" fill="currentColor" opacity=".15"/><circle cx="18" cy="24" r="12" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="18" y="29" fill="currentColor" text-anchor="middle" font-size="15" font-family="system-ui" font-weight="700">${rank}</text>${rank===1?'<path d="m9 11-2-8 7 4 4-6 4 6 7-4-2 8z" fill="currentColor"/>':''}</svg>`}
@@ -1787,13 +1783,14 @@ function ui21ResultState(a){
 const UI21_PAGE=30;
 function ui21DrawStudents(){const host=$('stuTable21');if(!host)return;const q=ui21StuQ.trim().toLocaleLowerCase();
  const list=teacherStudents.filter(s=>(ui21StuClass==='all'||s.classId===ui21StuClass)&&(!q||String(s.name).toLocaleLowerCase().includes(q)))
-  .sort((a,b)=>String(a.classId).localeCompare(String(b.classId))||String(a.name).localeCompare(String(b.name),'zh-HK'));
+  .sort(studentOrder21);
+ if(!$('studentNumbers21')){host.insertAdjacentHTML('beforebegin','<button class="btn sm sky" id="studentNumbers21" style="margin:10px 0">🔢 批量設定學號／順序</button>');$('studentNumbers21').onclick=editStudentNumbers21}
  if($('stuCount21'))$('stuCount21').textContent=`${list.length} / ${teacherStudents.length} 位`;
  if(!teacherStudents.length){host.innerHTML='<div class="ui21-empty">還沒有學生帳戶。按「批量匯入」一次貼上全班姓名。</div>';return}
  if(!list.length){host.innerHTML='<div class="ui21-empty">沒有符合的學生，請改變搜尋或班別。</div>';return}
  const dt=v=>v?esc(new Date(v).toLocaleString('zh-HK',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})):'—';
- host.innerHTML=`<div class="ui21-tablewrap"><table class="ui21-table"><thead><tr><th>學生</th><th>年級／班別</th><th>狀態</th><th>最近登入</th><th>密碼</th><th>重設時間</th><th>操作</th></tr></thead><tbody>${list.map(s=>`<tr>
-  <td><span class="row" style="flex-wrap:nowrap">${avatar(s.name)}<b style="white-space:normal;overflow-wrap:anywhere">${esc(s.name)}</b></span></td>
+ host.innerHTML=`<div class="ui21-tablewrap"><table class="ui21-table"><thead><tr><th>學號</th><th>學生</th><th>年級／班別</th><th>狀態</th><th>最近登入</th><th>密碼</th><th>重設時間</th><th>操作</th></tr></thead><tbody>${list.map(s=>`<tr>
+  <td class="num">${esc(s.studentNo||'—')}</td><td><span class="row" style="flex-wrap:nowrap">${avatar(s.name)}<b style="white-space:normal;overflow-wrap:anywhere">${esc(s.name)}</b></span></td>
   <td>${esc(s.grade)} 年級／${esc(s.classId)}</td>
   <td>${s.active?'<span class="badge b-ok">✓ 啟用</span>':'<span class="badge">停用</span>'}</td>
   <td>${dt(s.lastLogin)}</td>
@@ -1810,6 +1807,34 @@ async function ui21LearningStats(){const b=$('learningStats'),token=teacherToken
    :'<p class="ui21-empty">暫時沒有老師確認的錯字紀錄。</p>','🌱 常錯字與進步',true)}
  catch(e){toast(e.message,'bad')}finally{if(b?.isConnected){b.disabled=false;b.removeAttribute('aria-busy')}}
 }
+/* v2.1 classroom helpers */
+function studentOrder21(a,b){return String(a.classId).localeCompare(String(b.classId))||(Number(a.studentNo)||Infinity)-(Number(b.studentNo)||Infinity)||String(a.name).localeCompare(String(b.name),'zh-HK')}
+function editStudentNumbers21(){
+ const classes=[...new Set(teacherStudents.map(s=>s.classId))].sort();let chosen=classes.includes(ui21StuClass)?ui21StuClass:classes[0];if(!chosen)return toast('請先加入學生。');
+ modal(`<p>按學校學號填寫，登入名單會自動依學號排列。留空的學生排在後面。改學號不會改密碼或成績。</p><select class="in" id="numberClass21">${classes.map(c=>`<option>${esc(c)}</option>`).join('')}</select><div id="numberRows21" style="max-height:48vh;overflow:auto;margin:12px 0"></div><p id="numberError21" role="alert" style="color:var(--bad)"></p><button class="btn pri" id="numberSave21">保存這班學號</button>`,'🔢 學號與順序');
+ const drafts=new Map(teacherStudents.map(s=>[s.studentId,s.studentNo||'']));
+ const draw=()=>{$('numberRows21').innerHTML=teacherStudents.filter(s=>s.classId===chosen).sort(studentOrder21).map(s=>`<label class="row" style="justify-content:space-between;margin:8px 0">${esc(s.name)}<input class="in" style="width:100px" inputmode="numeric" maxlength="3" data-number-id="${esc(s.studentId)}" aria-label="${esc(s.name)}的學號" value="${esc(drafts.get(s.studentId))}"></label>`).join('');$('numberRows21').querySelectorAll('[data-number-id]').forEach(e=>e.oninput=()=>drafts.set(e.dataset.numberId,e.value))};
+ $('numberClass21').value=chosen;$('numberClass21').onchange=e=>{chosen=e.target.value;draw()};draw();
+ $('numberSave21').onclick=async()=>{const b=$('numberSave21');if(b.disabled)return;b.disabled=true;$('numberClass21').disabled=true;try{const entries=teacherStudents.filter(s=>s.classId===chosen).map(s=>({studentId:s.studentId,studentNo:drafts.get(s.studentId)}));const r=await request('saveStudentNumbers',{entries},teacherToken);teacherStudents=r.students;cfg=localConfig5(r.config);save('-config',cfg);closeModal();tStudents5(true);toast('學號及登入順序已保存。','good')}catch(e){$('numberError21').textContent=e.message;b.disabled=false;$('numberClass21').disabled=false}};
+}
+function bulkStudents21(){
+ modal(`<div id="bulk21"><p>每行一位姓名；也可從試算表複製「學號、姓名」兩欄。已有同班同名學生只更新填入的學號，保留密碼和成績。</p><div class="g2"><label>年級<input class="in" id="bulkGrade21" type="number" min="1" max="12" value="4"></label><label>班別<input class="in" id="bulkClass21" value="4B"></label></div><label class="f" for="bulkNames21">姓名，或「學號＋Tab＋姓名」（最多200位）</label><textarea class="in" id="bulkNames21" rows="10" placeholder="1&#9;陳小明&#10;2&#9;李小美"></textarea><p class="note" id="bulkPreview21"></p><p id="bulkErr21" role="alert" style="color:var(--bad)"></p><button class="btn pri block" id="bulkSave21">確認匯入</button></div>`,'📋 批量匯入學生');
+ let plan=[],busy=false;const preview=()=>{try{const rows=$('bulkNames21').value.split(/\r?\n/).filter(s=>s.trim());if(rows.length>200)throw Error('每次最多200位。');plan=rows.map(line=>{const cols=line.trim().split(/\t/);if(cols.length>2)throw Error('只接受姓名一欄，或學號、姓名兩欄。');const name=(cols.length===2?cols[1]:cols[0]).trim(),studentNo=cols.length===2?cols[0].trim():'';if(!name||name.length>40)throw Error('請檢查姓名，每位最多40字。');if(studentNo&&(!/^\d{1,3}$/.test(studentNo)||+studentNo<1))throw Error('學號須為1至999。');return {name,studentNo}});const c=canonicalClass($('bulkClass21').value.trim().toUpperCase()),unique=[...new Map(plan.map(s=>[s.name,s])).values()],old=unique.filter(e=>teacherStudents.some(s=>s.classId===c&&s.name===e.name));$('bulkPreview21').textContent=`${rows.length} 行；${unique.length-old.length} 位新學生，${old.length} 位已存在（有填學號才更新），本批重複 ${rows.length-unique.length} 行。`;$('bulkErr21').textContent='';$('bulkSave21').disabled=busy||!rows.length}catch(e){$('bulkErr21').textContent=e.message;$('bulkSave21').disabled=true}};
+ $('bulkNames21').oninput=preview;$('bulkClass21').oninput=()=>{$('bulkGrade21').value=gradeOf(canonicalClass($('bulkClass21').value.trim().toUpperCase()));preview()};preview();
+ $('bulkSave21').onclick=async()=>{if(busy)return;busy=true;const b=$('bulkSave21');b.disabled=true;b.textContent='正在一次匯入…';try{const r=await request('importStudents',{classId:$('bulkClass21').value,grade:$('bulkGrade21').value,entries:plan},teacherToken);teacherStudents=r.students;cfg=localConfig5(r.config);save('-config',cfg);if(teacherTab==='students')tStudents5(true);$('bulk21').innerHTML=`<p>✓ 新增 ${r.added} 位，更新學號 ${r.updated||0} 位，跳過 ${r.skipped.length} 行。</p><button class="btn pri" id="bulkDone21">完成</button>`;$('bulkDone21').onclick=closeModal}catch(e){$('bulkErr21').textContent=e.message;busy=false;b.disabled=false;b.textContent='重試匯入'}};
+}
+/* EDB's own form uses POST; GET with Chinese query does not reliably find the character. */
+function openEDB21(ch){
+ if(!/^[\u3400-\u9fff]$/u.test(ch))return toast('請選一個中文字。');
+ stopAudio();if(screen==='writing')persistDraft();
+ const form=document.createElement('form');form.method='POST';form.action='https://www.edbchinese.hk/lexlist_ch/result.jsp';form.target='_blank';form.rel='noopener noreferrer';form.acceptCharset='UTF-8';form.hidden=true;
+ for(const [name,value] of Object.entries({searchMethod:'direct',searchCriteria:ch,sortBy:'stroke',jpC:'lshk'})){const el=document.createElement('input');el.type='hidden';el.name=name;el.value=value;form.append(el)}document.body.append(form);form.submit();form.remove();
+}
+function addStudyLinks21(host,chars){
+ const unique=[...new Set(chars)].filter(ch=>/^[\u3400-\u9fff]$/u.test(ch));if(!unique.length)return;
+ const box=document.createElement('div');box.className='edb-links21';box.innerHTML='<p class="small muted">查香港正寫：點字會另開教育局字詞表。此處電腦字形只供參考。</p><div class="row">'+unique.map(ch=>`<button type="button" class="btn sm reference21" data-edb-char="${esc(ch)}" aria-label="查 ${esc(ch)} 的教育局字形">${esc(ch)} ↗</button>`).join('')+'</div>';box.querySelectorAll('[data-edb-char]').forEach(b=>b.onclick=()=>openEDB21(b.dataset.edbChar));host.append(box);
+}
+
 /* ---------- global wiring ---------- */
 $('back').onclick=()=>{if(screen==='writing')return leaveWriting();if(screen==='lesson'||screen==='result')screen='home';else if(screen==='ready')screen='lesson';else if(screen==='teacher'){collect();screen=user?'home':'login'}else{user=null;studentToken='';screen='login'}render()};
 $('boardBtn').onclick=showBoard;$('rateBtn').onclick=audioSettings;$('teacherBtn').onclick=()=>{if(screen==='writing')return toast('請先交卷或按「稍後繼續」。');teacherLogin()};
