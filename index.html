@@ -408,6 +408,9 @@ body.ui21 .toast{max-width:min(90vw,640px)}body.ui21 dialog{width:min(640px,94vw
 :root{--reference-font:"Penroom HK Kai","Kaiti TC","STKaiti","BiauKai","Noto Sans HK",serif}
 body.ui21 .reference21,body.ui21 .ghost,body.ui21 .ref,body.ui21 .preview-cell{font-family:var(--reference-font);font-weight:400;font-synthesis:none}
 .hk-kai-credit{max-width:1180px;margin:0 auto;padding:0 22px 30px;color:var(--ink2);font-size:13px}
+</style><style id="ghostAlign21Style">
+body.ui21 .ghost.ink-centred21{display:block;font-size:0;line-height:0;padding:0;letter-spacing:0}
+body.ui21 .ghost.ink-centred21>svg{display:block;width:100%;height:100%;overflow:visible;pointer-events:none}
 </style></head><body class="ui21">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
 <symbol id="mascot" viewBox="0 0 120 170"><g stroke="#3B2F2A" stroke-width="3" stroke-linejoin="round"><rect x="30" y="8" width="60" height="28" rx="12" fill="#F09AA2"></rect><rect x="30" y="30" width="60" height="14" fill="#C9D4DE"></rect><rect x="30" y="42" width="60" height="82" fill="#F3B53F"></rect><path d="M50 44v78M70 44v78" stroke-width="2" opacity=".35"></path><path d="M30 124h60l-30 42z" fill="#F5D6A8"></path><path d="M52 154h16l-8 12z" fill="#3B2F2A"></path></g><circle cx="48" cy="76" r="5" fill="#3B2F2A"></circle><circle cx="72" cy="76" r="5" fill="#3B2F2A"></circle><circle cx="49.5" cy="74.5" r="1.6" fill="#fff"></circle><circle cx="73.5" cy="74.5" r="1.6" fill="#fff"></circle><ellipse cx="41" cy="90" rx="6" ry="4" fill="#F09AA2" opacity=".8"></ellipse><ellipse cx="79" cy="90" rx="6" ry="4" fill="#F09AA2" opacity=".8"></ellipse><path d="M52 91q8 9 16 0" fill="none" stroke="#3B2F2A" stroke-width="3" stroke-linecap="round"></path></symbol>
@@ -1867,4 +1870,31 @@ setConnection();render();
 if(endpoint&&location.protocol!=='file:')request('bootstrap').then(r=>{cfg=localConfig5(r.config);save('-config',cfg);setConnection('Google Sheets 連線成功');if(screen==='login')render()}).catch(e=>{setConnection('Google Sheets 連線失敗');toast(e.message,'bad')});
 </script>
 
+<script id="ghostAlign21Script">
+/* Centre reference ink, not font line boxes. Only the ghost changes; writing canvas stays intact. */
+(()=>{
+ const cache=new Map(),done=new WeakMap(),ctx=document.createElement('canvas').getContext('2d'),ns='http://www.w3.org/2000/svg';
+ function fit(el){
+  const ch=el.dataset.referenceChar||el.textContent;
+  if(!/^[\u3400-\u9fff]$/u.test(ch)||!ctx)return;
+  const family=getComputedStyle(el).fontFamily,key=family+'|'+ch+'|'+hkKaiState21;
+  if(done.get(el)===key)return;
+  ctx.font='400 100px '+family;ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  let m=cache.get(key);if(!m){const t=ctx.measureText(ch);m={l:t.actualBoundingBoxLeft,r:t.actualBoundingBoxRight,a:t.actualBoundingBoxAscent,d:t.actualBoundingBoxDescent};cache.set(key,m)}
+  const w=m.l+m.r,h=m.a+m.d;
+  if(!Object.values(m).every(Number.isFinite)||w<=0||h<=0)return;
+  const scale=Math.min(1.15,82/Math.max(w,h)),svg=document.createElementNS(ns,'svg'),text=document.createElementNS(ns,'text');
+  svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('preserveAspectRatio','xMidYMid meet');svg.setAttribute('aria-hidden','true');
+  text.setAttribute('x',String(50+(m.l-m.r)*scale/2));text.setAttribute('y',String(50+(m.a-m.d)*scale/2));
+  text.style.fontFamily=family;text.style.fontSize=(100*scale)+'px';text.style.fontWeight='400';text.style.letterSpacing='0';text.setAttribute('fill','currentColor');text.textContent=ch;
+  svg.append(text);el.dataset.referenceChar=ch;done.set(el,key);el.replaceChildren(svg);el.classList.add('ink-centred21');
+ }
+ function scan(root){if(root.nodeType!==1)return;if(root.matches('.ghost'))fit(root);root.querySelectorAll('.ghost').forEach(fit)}
+ const observer=new MutationObserver(records=>{for(const r of records)for(const node of r.addedNodes)scan(node)});
+ observer.observe(document.body,{childList:true,subtree:true});scan(document.body);
+ function refresh(){cache.clear();document.querySelectorAll('.ghost').forEach(el=>{done.delete(el);fit(el)})}
+ if(document.fonts){document.fonts.ready.then(refresh);document.fonts.addEventListener('loadingdone',refresh)}
+})();
+
+</script>
 </body></html>
