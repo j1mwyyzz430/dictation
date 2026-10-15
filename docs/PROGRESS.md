@@ -4,6 +4,8 @@
 
 工作分支：`fix/hk-kai-ink-centering`；起點 `f5152e3`，與檢查時遠端 main 相同。原工作目錄乾淨。尚未合併或部署。
 
+修正提交 `4445b89` 已推送至遠端同名分支。`gh pr create --draft` 被 GitHub GraphQL API 的 Forbidden 回應阻擋，**尚未建立 PR**；可由 [GitHub 建立 PR 頁面](https://github.com/j1mwyyzz430/dictation/pull/new/fix/hk-kai-ink-centering) 手動建立供檢查的 PR。這是 API 存取限制，Git 分支推送已成功，不需重新提供 Git 憑證。
+
 ### 已完成
 
 - 讀取詳細交接、候選及正式入口，比較完整檔案；大型 Base64／字元表用完整資料比對，沒有逐行輸出。原倉庫沒有 AGENTS.md。
