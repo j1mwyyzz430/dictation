@@ -1,5 +1,15 @@
 # 筆尖默書室接手紀錄
 
+## 詞語分組（2026-10-16，工作分支待發布）
+
+`feat/word-sections-and-provisional-ranking` 新增教師詞語分組及學生溫習選課。教材保留 `words` 原陣列，另以 `wordSections:[{title,start,end}]` 記錄1起算的連續區間。範圍不可重疊；未分配詞語仍可選。新增／刪除／調動原詞語後老師須重新核對範圍。
+
+實際呼叫鏈：`tContent → renderWordEditor22`，`collect → collectWordSections22`，`storeConfig → validateWordSections22 / verifyWordSectionsSaved22`；`readyView → renderWordChoices22`，本機溫習 `startAttempt → selectReviewWords22`。保留 `wN` keys、讀音、歷史 snapshot 和所有原考試模式。分組只限溫習，不改計分範圍。
+
+老師在課次設定中填四篇課文名稱與各自詞語起止位置，保存後學生可單課、多課或全部溫習。尚未取得真實六年級課文邊界，沒有自動把40詞均分或寫入正式教材。後台須原樣保存並回傳 metadata；若丟失會顯示錯誤。模擬測試通過，正式保存尚未驗證。
+
+即時系統分數入榜／教師改分後替代仍待目前部署的完整 Code.gs，詳見 `PROGRESS.md`。不要把此分支名稱當成龍虎榜已完成。
+
 ## 入口、版本與發布
 
 - 最新交付：使用者已授權直接更新；修正已推送到 `main`。更新前的完整網站程式保存在遠端 `backup/pre-centering-20261015-f5152e3`。Pages 完成狀態因 API／網路403尚未確認，詳見 `PROGRESS.md`。

@@ -1366,7 +1366,7 @@ function tContentV5(){if(!cEdit)cEdit=clone(cfg);const keys=Object.keys(cEdit.le
  $('lessonClass').value=cClass;$('lessonClass').onchange=e=>{collect();cClass=e.target.value;cLesson=0;tContent()};$('eL').value=cLesson;$('eL').onchange=e=>{collect();cLesson=+e.target.value;tContent()};$('addLesson').onclick=()=>{collect();list.push({id:'lesson-'+uid(),title:'新課次',grade:gradeOf(cClass),words:[],sentences:[],paragraph:'',readings:{},status:'draft',everPublished:false});cLesson=list.length-1;tContent()};if(!l)return;$('eStatus').value=l.status;$('copyLesson').onclick=()=>{collect();list.push({...clone(l),id:'lesson-'+uid(),title:l.title+'（副本）',status:'draft',everPublished:false});cLesson=list.length-1;tContent()};const move=d=>{collect();const j=cLesson+d;if(j<0||j>=list.length)return;[list[j],list[cLesson]]=[list[cLesson],list[j]];cLesson=j;tContent()};$('upLesson').onclick=()=>move(-1);$('downLesson').onclick=()=>move(1);
  $('deleteLesson').onclick=async()=>{collect();if(!confirm(l.everPublished?'封存此課次？已開始的試卷仍可補交。':'永久刪除此未發布課次？'))return;if(l.everPublished)l.status='archived';else list.splice(cLesson,1);cLesson=0;await storeConfig(cEdit)};$('saveLesson').onclick=()=>{collect();storeConfig(cEdit)};$('discardLesson').onclick=()=>{cEdit=null;tContent()};$('lessonPreview').onclick=()=>{collect();lessonPreview5(l)}}
 function lessonPreview5(l){const groups=[...buildGroups(l,'dictation','all'),...buildGroups(l,'memory','paragraph')],pages=layoutPages(groups),count=groups.flatMap(g=>Array.from(g.text)).filter(c=>!/^\s$/u.test(c)&&counted(c,cEdit.settings)).length;let off=0;const map={};groups.forEach(g=>Array.from(g.text).filter(c=>!/^\s$/u.test(c)).forEach((ch,i)=>map[off++]={key:g.key+':'+i,ch}));$('readings5').innerHTML=`<h3 style="margin-top:20px">預覽：${count} 個計分字、${pages.length} 小頁</h3><p class="small muted">每個讀音欄只影響這一次出現。輸入同音字或短詞供粵語聲線朗讀；不是粵拼轉音引擎。請逐項試聽。改動文字後請重新檢查位置。</p>${pages.map((p,n)=>`<section class="rg"><div class="row"><b>第${n+1}頁</b><button class="btn sm" data-previewpage="${n}">🔊 試聽本小段</button></div><div class="reading-grid">${p.indices.map(i=>`<label><span class="preview-cell">${esc(map[i].ch)}</span><small>${esc(map[i].key)}</small><input class="in" data-reading="${esc(map[i].key)}" value="${esc(l.readings?.[map[i].key]||'')}" placeholder="讀音覆寫"><button type="button" class="btn sm" data-previewchar="${i}">🔊</button></label>`).join('')}</div></section>`).join('')}`;$('readings5').querySelectorAll('[data-previewchar]').forEach(b=>b.onclick=()=>{collect();const m=map[+b.dataset.previewchar];speak(l.readings[m.key]||m.ch,b)});$('readings5').querySelectorAll('[data-previewpage]').forEach(b=>b.onclick=()=>{collect();speak(pages[+b.dataset.previewpage].indices.map(i=>l.readings[map[i].key]||map[i].ch).join(''),b)})}
-async function storeConfig(c){try{const r=await request('saveConfig',{config:c},teacherToken);cfg=localConfig5(r.config);save('-config',cfg);cEdit=null;toast('已保存，重新載入及其他裝置會使用新設定。','good');render()}catch(e){toast(e.message,'bad')}}
+async function storeConfig(c){try{validateWordSections22(c);const r=await request('saveConfig',{config:c},teacherToken);verifyWordSectionsSaved22(c,r.config);cfg=localConfig5(r.config);save('-config',cfg);cEdit=null;toast('已保存，重新載入及其他裝置會使用新設定。','good');render()}catch(e){toast(e.message,'bad')}}
 function tRulesV5(){const s=cfg.settings;$('tBody').innerHTML=`<div class="g2"><div><h2>⚖️ 試卷分數</h2><p>整份默書採扣分制；單項採正確率。全無正確字一律0分。</p><label class="f">整份每錯一字扣分</label><input class="in" id="rPen" type="number" min="0" max="10" value="${s.penalty}"><label class="f"><input type="checkbox" id="rPun" ${s.punctuationCounts?'checked':''}> 標點也計分</label><label class="f"><input type="checkbox" id="rIntegrity" ${s.integrity!==false?'checked':''}> 試行字形完整度提示（可能誤報，只交老師覆核）</label><label class="f">預設粵語語速</label><input type="range" id="rRate" min="0.3" max="1" step=".05" value="${s.rate}"><h2 style="margin-top:22px">🏆 滿分學習積分</h2>${Object.entries(DEFAULT_WEIGHTS).map(([k,v])=>`<label class="f">${{words:'詞語',sentences:'句子',paragraph:'段落',memory:'背默段落'}[k]}</label><input class="in" id="weight-${k}" type="number" min="0" max="10000" value="${s.weights?.[k]??v}">`).join('')}<label class="f">每週目標次數</label><input class="in" id="weeklyGoal" type="number" min="1" max="50" value="${s.weeklyGoal||3}"><p class="small muted">權重只影響新開始的練習。沒有每日上限或重做遞減。</p><button class="btn pri" id="rSave">保存規則</button></div><div><h2>🔑 教師密碼</h2><label class="f">新密碼（至少8字元）</label><input class="in" id="pw1" type="password"><label class="f">確認</label><input class="in" id="pw2" type="password"><button class="btn gold" id="pwSave" style="margin-top:14px">更改教師密碼</button><p class="small muted">教師密碼沿用後端雜湊保存，不向學生提供。</p><button class="btn sky" id="migrationInfo">查看升級核對報告</button><div id="migrationResult"></div></div></div>`;$('rSave').onclick=()=>{const c=clone(cfg);c.settings={...c.settings,penalty:+$('rPen').value,punctuationCounts:$('rPun').checked,integrity:$('rIntegrity').checked,rate:+$('rRate').value,weeklyGoal:+$('weeklyGoal').value,weights:Object.fromEntries(Object.keys(DEFAULT_WEIGHTS).map(k=>[k,+$('weight-'+k).value]))};storeConfig(c)};$('pwSave').onclick=async()=>{try{if($('pw1').value!==$('pw2').value)throw Error('兩次密碼不同。');await request('changePassword',{password:$('pw1').value},teacherToken);$('pw1').value=$('pw2').value='';toast('教師密碼已更新。','good')}catch(e){toast(e.message,'bad')}};$('migrationInfo').onclick=async()=>{try{const r=await request('migrationReport',{},teacherToken);$('migrationResult').textContent=JSON.stringify(r.report,null,2)}catch(e){toast(e.message,'bad')}}}
 async function openReviewV5(id){try{const a=(await request('attempt',{id},teacherToken)).attempt;const ix=teacherRecords.findIndex(x=>x.id===id);if(ix>=0)teacherRecords[ix]=a;openReviewBase(id);const strip=document.createElement('div');strip.className='row';strip.style.margin='12px 0';strip.innerHTML=`<label><input id="onlyPending" type="checkbox"> 只看待核字</label><label><input id="excludePaper" type="checkbox" ${a.excluded?'checked':''}> 排除排名（保留試卷）</label><button class="btn sm" id="nextPaper">下一份試卷</button><button class="btn sm" id="revokePaper">撤回覆核</button><span class="small muted">單字提示 ${a.hints||0} 次 · 離開 ${a.leaves||0} 次${a.fastFlag?' · 作答較快，請老師了解':''}${a.incomplete?' · 舊資料不完整，待處理':''}</span>`;$('teacherInk').before(strip);$('onlyPending').onchange=()=>{const host=$('teacherInk');host.querySelectorAll('.rc').forEach(el=>el.hidden=$('onlyPending').checked&&verdict(reviewing.cells[+el.id.slice(2)])!==null)};$('nextPaper').onclick=()=>{if(!confirm('未保存的改分將不保留，前往下一份？'))return;const index=teacherRecords.findIndex(x=>x.id===id),next=teacherRecords.slice(index+1).find(x=>!x.approved)||teacherRecords.find(x=>x.id!==id&&!x.approved);if(next)openReview(next.id);else toast('沒有下一份待覆核試卷。')};$('revokePaper').onclick=()=>saveReview(false)}catch(e){toast(e.message,'bad')}}
 async function saveReview(approve){const a=reviewing;if(!a)return;try{const r=await request('review',{id:a.id,version:a.version,manual:a.cells.map(c=>c.manual),approve,excluded:$('excludePaper')?.checked},teacherToken);const i=teacherRecords.findIndex(x=>x.id===a.id);teacherRecords[i]=r.attempt;closeModal();if($('tList'))showTeacherRows();refreshBoard();toast(approve?'覆核完成，積分已更新。':'已保存／撤回覆核。','good')}catch(e){toast(e.message,'bad')}}
@@ -1411,7 +1411,7 @@ async function startAttempt(){
  if(draft5()&&!confirm('已有未完成草稿。開始新卷會取代草稿，是否繼續？'))return;
  b.disabled=true;b.textContent='正在準備題目…';
  try{const id=uid();let snapshot;if(endpoint&&mode!=='review'&&!teacherPreview)snapshot=(await request('start',{id,lessonId:l.id,mode,scope:wantedScope,count:randomCount6,paragraphKeys:chosenParagraphKeys21()},studentToken)).start;
- else snapshot={groups:selectParagraphGroups21(selectGroups6(l,mode,wantedScope,randomCount6),chosenParagraphKeys21()),settings:{...clone(cfg.settings),scoreRule:6,integrity:false},readings:l.readings||{}};
+ else snapshot={groups:selectReviewWords22(selectParagraphGroups21(selectGroups6(l,mode,wantedScope,randomCount6),chosenParagraphKeys21())),settings:{...clone(cfg.settings),scoreRule:6,integrity:false},readings:l.readings||{}};
  let groups=clone(snapshot.groups);const requested=chosenParagraphKeys21();if(requested){const actual=groups.filter(g=>g.kind==='段落'||g.kind==='背默').map(g=>g.key);if(actual.length!==requested.length||requested.some(k=>!actual.includes(k)))throw Error('後端未支援選段，請老師更新及重新部署 Code.gs。');}const chars=groups.flatMap(g=>Array.from(g.text).filter(c=>!/^\s$/u.test(c)));if(!chars.some(c=>counted(c,snapshot.settings))||chars.length>500)throw Error('練習需要有計分字，最多500格；請減少抽題數。');
  if(mode==='dictation')groups=[...shuffle(groups.filter(g=>g.kind==='詞語')),...groups.filter(g=>g.kind!=='詞語')];
  attempt={...snapshot,id,studentId:user.studentId,classId:user.classId,grade:user.grade,name:user.name,lessonId:l.id,lessonTitle:snapshot.lessonTitle||l.title,mode,scope:wantedScope,groups,pages:layoutPages(groups),cells:groups.flatMap(g=>Array.from(g.text).filter(c=>!/^\s$/u.test(c))).map((expected,i)=>({i,expected,strokes:[],auto:'blank',manual:null})),started:Date.now(),activeMs:0,resumedAt:Date.now(),leaves:0,hints:0,elapsed:0,created:'',version:1,approved:false,newRule:true,testAccount:teacherPreview,configStamp:snapshot.configStamp||cfg.stamp};
@@ -1658,7 +1658,7 @@ function refreshLessonGradeMenu(){
  };
 }
  function tContent(){
- if(!cEdit)cEdit=clone(cfg);Object.values(cEdit.lessons).flat().forEach(normalizeLesson6);tContentV5();refreshLessonGradeMenu();const l=cEdit.lessons[cClass]?.[cLesson];if(!l||!$('eP'))return;
+ if(!cEdit)cEdit=clone(cfg);Object.values(cEdit.lessons).flat().forEach(normalizeLesson6);tContentV5();refreshLessonGradeMenu();const l=cEdit.lessons[cClass]?.[cLesson];if(!l||!$('eP'))return;renderWordEditor22(l);
  $('eP').insertAdjacentHTML('beforebegin',`<p class="note blue">已載入 ${l.paragraphs.length} 個讀默段落；其中 ${new Set(l.paragraphs.map(p=>p.trim())).size} 個不同內容。相同內容會保留，隨機題庫只算一次。</p>`);
  const first=$('eP');first.setAttribute('data-readparagraph','0');
  first.insertAdjacentHTML('afterend',`${l.paragraphs.slice(1).map((p,i)=>`<label class="f">讀默段落 ${i+2}</label><textarea class="in" data-readparagraph="${i+1}" rows="5">${esc(p)}</textarea>`).join('')}<button class="btn sky sm" id="addReadParagraph6" style="margin-top:10px">＋ 新增讀默段落</button><p class="small muted">每個框是一個完整段落；清空該框即可移除。</p><h3>背默段落（獨立題庫）</h3>${(l.memoryParagraphs.length?l.memoryParagraphs:['']).map((p,i)=>`<label class="f">背默段落 ${i+1}</label><textarea class="in" data-memoryparagraph="${i}" rows="5">${esc(p)}</textarea>`).join('')}<button class="btn sky sm" id="addMemoryParagraph6" style="margin-top:10px">＋ 新增背默段落</button><p class="small muted">背默內容不會混入整份讀默或隨機讀默。</p>`);
@@ -1666,7 +1666,7 @@ function refreshLessonGradeMenu(){
  $('addReadParagraph6').onclick=()=>{collect();l.paragraphs.push('');tContent()};$('addMemoryParagraph6').onclick=()=>{collect();l.memoryParagraphs.push('');tContent()};
 }
 function collect(){
- const l=cEdit?.lessons[cClass]?.[cLesson];if(!l||!$('eT'))return;const old=JSON.stringify([l.words,l.sentences,l.paragraphs,l.memoryParagraphs]);collectV5();for(const [attr,key,titles] of [['data-readparagraph','paragraphs','paragraphTitles'],['data-memoryparagraph','memoryParagraphs','memoryParagraphTitles']]){const rows=Array.from(document.querySelectorAll('['+attr+']'),(e,i)=>({text:e.value.trim(),title:document.querySelector('[data-paragraph-title="'+attr+':'+i+'"]')?.value.trim()||''})).filter(x=>x.text);l[key]=rows.map(x=>x.text);l[titles]=rows.map(x=>x.title)};l.paragraph=l.paragraphs[0]||'';
+ const l=cEdit?.lessons[cClass]?.[cLesson];if(!l||!$('eT'))return;const old=JSON.stringify([l.words,l.sentences,l.paragraphs,l.memoryParagraphs]);collectV5();collectWordSections22(l);for(const [attr,key,titles] of [['data-readparagraph','paragraphs','paragraphTitles'],['data-memoryparagraph','memoryParagraphs','memoryParagraphTitles']]){const rows=Array.from(document.querySelectorAll('['+attr+']'),(e,i)=>({text:e.value.trim(),title:document.querySelector('[data-paragraph-title="'+attr+':'+i+'"]')?.value.trim()||''})).filter(x=>x.text);l[key]=rows.map(x=>x.text);l[titles]=rows.map(x=>x.title)};l.paragraph=l.paragraphs[0]||'';
  if(old!==JSON.stringify([l.words,l.sentences,l.paragraphs,l.memoryParagraphs])){l.readings={};if($('readings5'))$('readings5').innerHTML='<p>教材已改動，請重新預覽及設定讀音位置。</p>'}
 }
 function tRules(){tRulesV5();$('rIntegrity')?.closest('label')?.remove();$('rPen')?.previousElementSibling?.remove();$('rPen')?.remove();$('tBody').querySelector('p').textContent='新版固定：詞語30、句子30、段落／背默40；整份各部分相加100。隨機詞語每正確字3分，隨機句子／段落每字2分。舊卷沿用舊規則。';
@@ -1674,6 +1674,83 @@ function tRules(){tRulesV5();$('rIntegrity')?.closest('label')?.remove();$('rPen
  for(const k of Object.keys(DEFAULT_WEIGHTS)){$('weight-'+k)?.previousElementSibling?.remove();$('weight-'+k)?.remove()}
  const headings=[...$('tBody').querySelectorAll('h2')];headings.find(x=>x.textContent.includes('滿分學習積分'))?.remove();
  $('rSave').onclick=()=>{const c=clone(cfg);c.settings={...c.settings,integrity:false,scoreRule:6,punctuationCounts:$('rPun').checked,rate:+$('rRate').value,weeklyGoal:+$('weeklyGoal').value};storeConfig(c)};
+}
+
+/* Word sections keep the original flat words and wN reading keys intact. */
+function validateWordSectionList22(l){
+ const sections=l.wordSections;if(sections==null)return;
+ if(!Array.isArray(sections)||sections.length>50)throw Error('詞語分組最多50組。');
+ const used=new Set();for(const s of sections){
+  if(!s||typeof s.title!=='string'||!s.title.trim()||s.title.length>80)throw Error('請填寫詞語分組名稱（最多80字）。');
+  if(!Number.isInteger(s.start)||!Number.isInteger(s.end)||s.start<1||s.end<s.start||s.end>l.words.length)throw Error('請檢查詞語分組範圍：由第1個詞開始，不能超過本課詞語總數。');
+  for(let i=s.start;i<=s.end;i++){if(used.has(i))throw Error('詞語分組範圍重疊，請讓每個詞語只屬於一組。');used.add(i)}
+ }
+}
+function validateWordSections22(c){for(const l of Object.values(c.lessons||{}).flat())validateWordSectionList22(l)}
+function verifyWordSectionsSaved22(sent,received){
+ for(const [classId,lessons] of Object.entries(sent.lessons||{}))for(const l of lessons){
+  const saved=received?.lessons?.[classId]?.find(x=>x.id===l.id);
+  if(JSON.stringify(l.wordSections||[])!==JSON.stringify(saved?.wordSections||[]))throw Error('後台未完整保存詞語分組。畫面的編輯內容已保留，請先更新後台再重試。');
+ }
+}
+function wordSections22(l){
+ if(!l?.wordSections?.length)return [];
+ try{validateWordSectionList22(l)}catch{return []} // An old/malformed config must not hide words.
+ const used=new Set(),sections=l.wordSections.map((s,n)=>{
+  const keys=Array.from({length:s.end-s.start+1},(_,i)=>'w'+(s.start-1+i));keys.forEach(k=>used.add(k));
+  return {key:'section'+n,title:s.title,keys};
+ });
+ const other=l.words.map((_,i)=>'w'+i).filter(k=>!used.has(k));
+ if(other.length)sections.push({key:'other',title:'其他詞語',keys:other});return sections;
+}
+function collectWordSections22(l){
+ const host=$('wordSectionsEditor22');if(!host)return;
+ l.wordSections=[...host.querySelectorAll('[data-word-section-row]')].map(row=>({
+  title:row.querySelector('[data-word-title]').value.trim(),
+  start:Number(row.querySelector('[data-word-start]').value),end:Number(row.querySelector('[data-word-end]').value)
+ }));
+}
+function renderWordEditor22(l){
+ const words=$('eW');if(!words)return;
+ const box=document.createElement('section');box.id='wordSectionsEditor22';box.className='paragraph-picker21';words.after(box);
+ const draw=()=>{
+  box.innerHTML='<h3>詞語按課文分組</h3><p class="small muted">依上面詞語的行序填寫範圍，例如第1至10個屬於第一課。各組數量可以不同；未分組的詞語仍會保留。增刪或調動詞語後，請重新核對各組範圍。</p><div id="wordSectionRows22"></div><button type="button" class="btn sky sm" id="addWordSection22">＋ 新增課文分組</button>';
+  for(const [n,s] of (l.wordSections||[]).entries()){
+   const row=document.createElement('div');row.dataset.wordSectionRow='';row.className='card pad';row.style.margin='12px 0';
+   row.innerHTML=`<label class="f">課文／分組名稱<input class="in" data-word-title maxlength="80" placeholder="例如：第一課《課文名稱》" value="${esc(s.title)}"></label><div class="g2"><label class="f">由第幾個詞語<input class="in" data-word-start type="number" min="1" step="1" value="${esc(s.start)}"></label><label class="f">至第幾個詞語<input class="in" data-word-end type="number" min="1" step="1" value="${esc(s.end)}"></label></div><p class="small muted" data-word-preview></p><button type="button" class="btn sm" data-remove-word-section>移除此分組（保留詞語）</button>`;
+   const preview=()=>{const list=lines('eW'),a=Number(row.querySelector('[data-word-start]').value),b=Number(row.querySelector('[data-word-end]').value);row.querySelector('[data-word-preview]').textContent=a>=1&&b>=a&&b<=list.length?`${b-a+1} 個詞語：${list.slice(a-1,b).join('、')}`:'請填寫有效範圍。'};
+   row.querySelectorAll('input').forEach(input=>input.addEventListener('input',preview));
+   row.querySelector('[data-remove-word-section]').onclick=()=>{collectWordSections22(l);l.wordSections.splice(n,1);draw()};
+   box.querySelector('#wordSectionRows22').append(row);preview();
+  }
+  $('addWordSection22').onclick=()=>{collectWordSections22(l);if(l.wordSections.length>=50)return toast('最多50組。','bad');const first=Math.max(0,...l.wordSections.map(s=>s.end))+1;l.wordSections.push({title:'第'+(l.wordSections.length+1)+'課',start:first,end:Math.max(first,lines('eW').length)});draw()};
+ };
+ words.addEventListener('input',()=>{collectWordSections22(l);draw()});draw();
+}
+const wordChoices22=new Map();
+function wordChoice22(){
+ if(mode!=='review'||!['words','all'].includes(scope))return null;
+ const parts=wordSections22(currentLesson);if(!parts.length)return null;
+ const signature=JSON.stringify([currentLesson.id,currentLesson.grade,cfg.stamp,currentLesson.words,currentLesson.wordSections]);
+ if(!wordChoices22.has(signature))wordChoices22.set(signature,parts.map(s=>s.key));
+ return {parts,signature,selected:wordChoices22.get(signature)};
+}
+function selectReviewWords22(groups){
+ const choice=wordChoice22();if(!choice)return groups;
+ if(!choice.selected.length)throw Error('請最少選擇一組詞語。');
+ const allowed=new Map();for(const s of choice.parts)if(choice.selected.includes(s.key))s.keys.forEach(k=>allowed.set(k,s.title));
+ return groups.filter(g=>g.kind!=='詞語'||allowed.has(g.key)).map(g=>g.kind==='詞語'?{...g,title:allowed.get(g.key)}:g);
+}
+function renderWordChoices22(host,update){
+ const choice=wordChoice22();if(!choice)return;
+ const box=document.createElement('section');box.className='paragraph-picker21';box.id='wordChoices22';host.before(box);
+ const draw=()=>{
+  const selected=wordChoices22.get(choice.signature),all=selected.length===choice.parts.length;
+  box.innerHTML='<h3>選擇今次溫習的詞語</h3><p class="small muted">可集中溫習一課、選幾課，或全部溫習。溫習不計排名。</p><div class="row" style="margin-bottom:12px"><button type="button" class="btn sm" data-words-all aria-pressed="'+all+'">全部詞語</button><button type="button" class="btn sm" data-words-none>清除選擇</button></div><div class="paragraph-options21">'+choice.parts.map(s=>`<button type="button" class="paragraph-choice21 ${selected.includes(s.key)?'on':''}" data-word-choice="${esc(s.key)}" aria-pressed="${selected.includes(s.key)}"><b>${esc(s.title)}</b><small>${s.keys.length} 個詞語</small><span>${selected.includes(s.key)?'✓ 已選擇':'點選這一課'}</span></button>`).join('')+'</div>';
+  box.querySelectorAll('[data-word-choice]').forEach(b=>b.onclick=()=>{const key=b.dataset.wordChoice;wordChoices22.set(choice.signature,selected.includes(key)?selected.filter(k=>k!==key):[...selected,key]);draw();update()});
+  box.querySelector('[data-words-all]').onclick=()=>{wordChoices22.set(choice.signature,choice.parts.map(s=>s.key));draw();update()};
+  box.querySelector('[data-words-none]').onclick=()=>{wordChoices22.set(choice.signature,[]);draw();update()};
+ };draw();
 }
 
 /* v2.1 */
@@ -1710,9 +1787,9 @@ function readyView(){readyViewPre21();const l=currentLesson,app=$('app');if(!app
  const begin=$('begin'),rc=$('randomCount'),summary=document.createElement('div');summary.className='ui21-summary';summary.id='summary21';summary.setAttribute('aria-live','polite');begin.before(summary);
  const update=()=>{let txt,ok=true,warn='';if(isRandom){const n=Number(rc?.value),avail=ui21Pool(l,scope);if(!Number.isInteger(n)||n<1||n>50){ok=false;warn='抽題數量要是 1 至 50。'}else if(!avail){ok=false;warn='這個範圍沒有題目。'}
  txt=`<span>🎲 隨機測試</span><span>${scopeLabel(scope)}</span><span>抽 ${ok?Math.min(n,avail):'—'} 題${ok&&n>avail?`（題庫只有 ${avail} 題，會全部抽出）`:''}</span><span>每個正確字 +${RANDOM_RATE6[scope]} 分</span>`;
- }else{const base=memory?buildGroups(l,'memory','paragraph'):buildGroups(l,mode==='review'?'dictation':mode,scope),keys=chosenParagraphKeys21(),g=keys?.length===0?[]:selectParagraphGroups21(base,keys),c=ui21Count(g);if(!c.scored){ok=false;warn=keys?.length===0?'請最少選擇一個段落。':'這個範圍沒有可計分的字。'}else if(c.cells>500){ok=false;warn=`共 ${c.cells} 格，超過每卷 500 格上限，請選較小範圍。`}txt=`<span>${UI21_MODE[mode]}</span><span>${memory?'背默段落':scopeLabel(scope)}</span><span>共 ${c.cells} 格</span>${keys?'<span>已選 '+keys.length+' 段</span>':''}${mode==='review'?'<span>不計分</span>':''}`}
+ }else{const base=memory?buildGroups(l,'memory','paragraph'):buildGroups(l,mode==='review'?'dictation':mode,scope),keys=chosenParagraphKeys21(),g=keys?.length===0||wordChoice22()?.selected.length===0?[]:selectReviewWords22(selectParagraphGroups21(base,keys)),c=ui21Count(g);if(wordChoice22()?.selected.length===0){ok=false;warn='請最少選擇一組詞語。'}else if(!c.scored){ok=false;warn=keys?.length===0?'請最少選擇一個段落。':'這個範圍沒有可計分的字。'}else if(c.cells>500){ok=false;warn=`共 ${c.cells} 格，超過每卷 500 格上限，請選較小範圍。`}txt=`<span>${UI21_MODE[mode]}</span><span>${memory?'背默段落':scopeLabel(scope)}</span><span>共 ${c.cells} 格</span>${keys?'<span>已選 '+keys.length+' 段</span>':''}${mode==='review'?'<span>不計分</span>':''}`}
  summary.innerHTML=txt+(warn?`<b style="color:var(--bad);width:100%">⚠ ${warn}</b>`:'');if(!begin.hasAttribute('aria-busy'))begin.disabled=!ok};
- renderParagraphChoices21(summary,update);
+ renderWordChoices22(summary,update);renderParagraphChoices21(summary,update);
  if(rc){rc.addEventListener('input',update);app.querySelectorAll('[data-count]').forEach(b=>b.addEventListener('click',update))}update();
  begin.onclick=async()=>{if(begin.disabled||begin.hasAttribute('aria-busy'))return;begin.setAttribute('aria-busy','true');try{const p=startAttempt();if(begin.disabled)begin.innerHTML='<span class="ui21-spin"></span> 正在準備題目…';await p}finally{if(begin.isConnected){begin.removeAttribute('aria-busy');update()}}};
 }
