@@ -1,14 +1,14 @@
 # 筆尖默書室接手紀錄
 
-## v2.2 詞語分組（2026-10-16，工作分支待發布）
+## v2.2 詞語分組及暫定排名（2026-10-16）
 
 `feat/word-sections-and-provisional-ranking` 新增教師詞語分組及學生溫習選課。教材保留 `words` 原陣列，另以 `wordSections:[{title,start,end}]` 記錄1起算的連續區間。範圍不可重疊；未分配詞語仍可選。新增／刪除／調動原詞語後老師須重新核對範圍。
 
 實際呼叫鏈：`tContent → renderWordEditor22`，`collect → collectWordSections22`，`storeConfig → validateWordSections22 / verifyWordSectionsSaved22`；`readyView → renderWordChoices22`，本機溫習 `startAttempt → selectReviewWords22`。保留 `wN` keys、讀音、歷史 snapshot 和所有原考試模式。分組只限溫習，不改計分範圍。
 
-老師在課次設定中填四篇課文名稱與各自詞語起止位置，保存後學生可單課、多課或全部溫習。尚未取得真實六年級課文邊界，沒有自動把40詞均分或寫入正式教材。後台須原樣保存並回傳 metadata；若丟失會顯示錯誤。模擬測試通過，正式保存尚未驗證。
+老師在課次設定中填四篇課文名稱與各自詞語起止位置，保存後學生可單課、多課或全部溫習。尚未取得真實六年級課文邊界，沒有自動把40詞均分或寫入正式教材。後台須原樣保存並回傳 metadata；若丟失會顯示錯誤。真實後台函式搭配模擬儲存的測試已通過，正式 Google 保存尚未驗證。
 
-即時系統分數入榜／教師改分後替代仍待目前部署的完整 Code.gs，詳見 `PROGRESS.md`。不要把此分支名稱當成龍虎榜已完成。
+使用者已提供與原嵌入版本一致的現行 Code.gs。2.2 已局部修改兩份 `rankSummaries`，容許未覆核卷，以 `metrics.points` 入榜；人工改分經 `storeAttempt5_` 覆寫摘要及失效快取。`provisionalCount` 標示暫定卷數。保留零正確字、排除排名、不完整及練習卷的排除條件；舊未覆核卷也會按同一規則入榜。後台 `board5_` 使用 `rank22` 快取，公開設定提供 `backendVersion` 供前端相容處理。發布進度見 `PROGRESS.md`；更新與回復見 `RELEASE_2.2.md`。
 
 ## 入口、版本與發布
 

@@ -455,7 +455,9 @@ body.ui21 .ghost.ink-centred21>svg{display:block;width:100%;height:100%;overflow
 <dialog id="modal" class=""><div class="dlg" id="modalBody"></div></dialog>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script id="backendSource" type="text/plain">/* 筆尖默書室 Google Apps Script 後端 v4
+<script id="backendSource" type="text/plain">/* 筆尖默書室 Google Apps Script 後端 v2.2
+   現有網站更新：保存原碼後替換程式，管理部署 → 編輯 → 新版本；不要執行 setup、遷移或重設密碼。
+   以下原有首次安裝說明只供全新專案參考。
    1. 在目標 Google Sheet：擴充功能 → Apps Script，刪除原有代碼，貼上全部代碼。
    2. 專案設定 → 指令碼屬性：TEACHER_PASSWORD（老師密碼，至少八字元）、ALLOWED_ORIGIN（例如 https://abc.github.io，結尾不加斜線）。
    3. 選 setup → 執行，並授權（包括「連接外部服務」，用來下載字形及手寫辨識）。
@@ -528,10 +530,10 @@ function marksV5(a){
 function weekStart(now){const d=new Date(Number(now)+8*3600000);const day=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-day);d.setUTCHours(0,0,0,0);return d.getTime()-8*3600000;}
 function rankSummaries(attempts,students,grade,period,now){
  const by={},roster={};students.forEach(s=>roster[s.studentId]=s);const start=weekStart(now);
- for(const a of attempts){const st=roster[a.studentId];if(!st||String(st.grade)!==String(grade)||!a.approved||a.excluded||a.incomplete||a.mode==='review'||a.testAccount||a.practiceOnly||!a.metrics||!a.metrics.correct||a.metrics.pending)continue;
+ for(const a of attempts){const st=roster[a.studentId];if(!st||String(st.grade)!==String(grade)||a.excluded||a.incomplete||a.mode==='review'||a.testAccount||a.practiceOnly||!a.metrics||!a.metrics.correct)continue;
  const stamp=Date.parse(a.created);if(period==='week'&&(!Number.isFinite(stamp)||stamp<start||stamp>=start+7*86400000))continue;
- const r=by[a.studentId]||(by[a.studentId]={studentId:a.studentId,name:st.name,classId:st.classId,grade:st.grade,points:0,correct:0,total:0,count:0,seconds:0,timeValid:true});
- r.points+=a.metrics.points;r.correct+=a.metrics.correct;r.total+=a.metrics.total;r.count++;if(a.timeValid!==false&&Number.isFinite(a.elapsed)&&a.elapsed>0)r.seconds+=a.elapsed;else r.timeValid=false;
+ const r=by[a.studentId]||(by[a.studentId]={studentId:a.studentId,name:st.name,classId:st.classId,grade:st.grade,points:0,correct:0,total:0,count:0,provisionalCount:0,seconds:0,timeValid:true});
+ r.points+=a.metrics.points;r.correct+=a.metrics.correct;r.total+=a.metrics.total;r.count++;if(!a.approved)r.provisionalCount++;if(a.timeValid!==false&&Number.isFinite(a.elapsed)&&a.elapsed>0)r.seconds+=a.elapsed;else r.timeValid=false;
  }
  const rows=Object.values(by);rows.forEach(r=>{r.accuracy=r.correct/r.total*100;r.secondsPerChar=r.timeValid?r.seconds/r.total:null});
  const cmp=(a,b)=>b.points-a.points||(b.correct*a.total-a.correct*b.total)/(a.total*b.total)||Number(b.timeValid)-Number(a.timeValid)||(a.timeValid?a.seconds/a.total-b.seconds/b.total:0);
@@ -595,7 +597,7 @@ function normalizeConfig5_(input){const c=JSON.parse(JSON.stringify(input));c.cl
  for(const k of Object.keys(c.classes)){c.lessons[k]=c.lessons[k]||[];c.lessons[k].forEach(l=>{l.grade=l.grade||gradeOf(k);l.status=l.status||'published';l.everPublished=l.everPublished||l.status==='published';l.readings=l.readings||{}})}
  c.settings=Object.assign({rate:.55,tolerance:'relaxed',penalty:3,punctuationCounts:false,integrity:false,scoreRule:5,weeklyGoal:3},c.settings||{});c.settings.weights=Object.assign({},DEFAULT_WEIGHTS,c.settings.weights||{});c.schema=5;return c;}
 function config5V5_(){return get5_('config')||normalizeConfig5_(config_());}
-function publicConfig5_(){const c=config5_();const roster=students5_().filter(s=>s.active).map(publicStudent5_);c.roster=roster;c.classes={};roster.forEach(s=>(c.classes[s.classId]||(c.classes[s.classId]=[])).push(s.name));for(const k of Object.keys(c.lessons))c.classes[k]=c.classes[k]||[];return c;}
+function publicConfig5_(){const c=config5_();c.backendVersion='2.2';const roster=students5_().filter(s=>s.active).map(publicStudent5_);c.roster=roster;c.classes={};roster.forEach(s=>(c.classes[s.classId]||(c.classes[s.classId]=[])).push(s.name));for(const k of Object.keys(c.lessons))c.classes[k]=c.classes[k]||[];return c;}
 function summaries5_(){const gone=new Set(deletedRows6_().map(r=>r[0]));return rows5_('V5Attempts',['id','摘要JSON']).map(r=>JSON.parse(r[1])).filter(a=>!gone.has(a.id));}
 function storeAttempt5_(a){a.metrics=marks(a);const summary=JSON.parse(JSON.stringify(a));delete summary.cells;delete summary.groups;delete summary.pages;delete summary.readings;delete summary.settings;put5_('attempt:'+a.id,a);const sh=sheet5_('V5Attempts',['id','摘要JSON']),rows=sh.getDataRange().getValues(),i=rows.findIndex(r=>r[0]===a.id);if(i<0)sh.appendRow([a.id,JSON.stringify(summary)]);else sh.getRange(i+1,1,1,2).setValues([[a.id,JSON.stringify(summary)]]);PropertiesService.getScriptProperties().setProperty('RANK_REV',Utilities.getUuid());}
 function setup(){const ss=SpreadsheetApp.getActiveSpreadsheet(),p=PropertiesService.getScriptProperties();if(!ss)throw Error('請從 Google Sheet 開啟 Apps Script。');p.setProperty('SHEET_ID',ss.getId());if(!p.getProperty('ALLOWED_ORIGIN'))throw Error('請設定 ALLOWED_ORIGIN。');if(!migratePassword_())throw Error('請設定 TEACHER_PASSWORD（至少八字元）。');return migrateV5();}
@@ -628,11 +630,20 @@ function prepareSubmit_(q){if(deleted6_((q.payload||{}).id))throw Error('這份�
  return {snap,groups,cells:graded};}
 function submit_(p,s,pre){const old=get5_('attempt:'+p.id);if(old){if(old.studentId!==s.studentId)throw Error('試卷不是你的。');ensureSummary5_(old);return {attempt:old}}if(!pre||!pre.snap)throw Error('交卷資料不完整。');const elapsed=Number(p.elapsed);const a=Object.assign({},pre.snap,{groups:pre.groups,cells:pre.cells,created:new Date().toISOString(),approved:false,version:1,elapsed:Number.isFinite(elapsed)?Math.max(0,Math.min(86400,elapsed)):0,timeValid:Number.isFinite(elapsed)&&elapsed>0,leaves:Math.max(0,Math.min(999,Number(p.leaves)||0)),hints:Math.max(0,Math.min(9999,Number(p.hints)||0)),pointsRule:5});a.fastFlag=a.elapsed/Math.max(1,marks(a).total)<.3;storeAttempt5_(a);return {attempt:a};}
 function review_(p){const a=get5_('attempt:'+p.id);if(!a)throw Error('找不到試卷。');if(a.version!==Number(p.version))throw Error('試卷已更新，請重新載入。');if(!Array.isArray(p.manual)||p.manual.length!==a.cells.length||p.manual.some(v=>![true,false,null].includes(v)))throw Error('改分格式不正確。');const changed=a.cells.some((c,i)=>c.manual!==p.manual[i]);a.cells.forEach((c,i)=>c.manual=p.manual[i]);if(changed)a.regraded=true;if(p.approve&&(marks(a).pending||a.incomplete))throw Error('仍有待核字或資料不完整，不能確認。');a.approved=!!p.approve;a.excluded=!!p.excluded;a.version++;storeAttempt5_(a);return {attempt:a};}
-function saveConfig5_(input){const c=normalizeConfig5_(input),old=config5_();if(input.stamp!==old.stamp)throw Error('教材已被更新，請重新載入再修改。');const ids=new Set();for(const k in c.lessons){if(!Array.isArray(c.lessons[k])||c.lessons[k].length>80)throw Error('課次格式不正確。');for(const l of c.lessons[k]){normalizeLesson6(l);for(const key of ['paragraphTitles','memoryParagraphTitles']){if(l[key]!=null&&(!Array.isArray(l[key])||l[key].length>50||l[key].some(t=>typeof t!=='string'||t.length>80)))throw Error('段落名稱每個最多80字。')}if(l.paragraphs.length>50||l.memoryParagraphs.length>50||l.paragraphs.concat(l.memoryParagraphs).some(t=>typeof t!=='string'||t.length>3000))throw Error('段落格式不正確，每個段落最多3000字。');const unique=l.grade+':'+l.id;if(ids.has(unique))throw Error('同年級課次編號重複。');ids.add(unique);if(!/^[\w-]+$/.test(l.id)||typeof l.title!=='string'||!l.title.trim()||!Array.isArray(l.words)||!Array.isArray(l.sentences)||typeof l.paragraph!=='string'||l.words.concat(l.sentences,[l.paragraph]).some(t=>typeof t!=='string'||t.length>3000)||!['draft','published','archived'].includes(l.status))throw Error('教材格式不正確。');const prior=Object.values(old.lessons).flat().find(x=>x.id===l.id&&x.grade===l.grade);l.everPublished=!!prior?.everPublished||l.status==='published';if(Object.values(l.readings||{}).some(v=>typeof v!=='string'||v.length>80))throw Error('讀音覆寫每項最多80字。')}}
+function validateWordSectionList22(l){
+ const sections=l.wordSections;if(sections==null)return;
+ if(!Array.isArray(sections)||sections.length>50)throw Error('詞語分組最多50組。');
+ const used=new Set();for(const s of sections){
+  if(!s||typeof s.title!=='string'||!s.title.trim()||s.title.length>80)throw Error('請填寫詞語分組名稱（最多80字）。');
+  if(!Number.isInteger(s.start)||!Number.isInteger(s.end)||s.start<1||s.end<s.start||s.end>l.words.length)throw Error('請檢查詞語分組範圍：由第1個詞開始，不能超過本課詞語總數。');
+  for(let i=s.start;i<=s.end;i++){if(used.has(i))throw Error('詞語分組範圍重疊，請讓每個詞語只屬於一組。');used.add(i)}
+ }
+}
+function saveConfig5_(input){const c=normalizeConfig5_(input),old=config5_();if(input.stamp!==old.stamp)throw Error('教材已被更新，請重新載入再修改。');const ids=new Set();for(const k in c.lessons){if(!Array.isArray(c.lessons[k])||c.lessons[k].length>80)throw Error('課次格式不正確。');for(const l of c.lessons[k]){normalizeLesson6(l);for(const key of ['paragraphTitles','memoryParagraphTitles']){if(l[key]!=null&&(!Array.isArray(l[key])||l[key].length>50||l[key].some(t=>typeof t!=='string'||t.length>80)))throw Error('段落名稱每個最多80字。')}if(l.paragraphs.length>50||l.memoryParagraphs.length>50||l.paragraphs.concat(l.memoryParagraphs).some(t=>typeof t!=='string'||t.length>3000))throw Error('段落格式不正確，每個段落最多3000字。');const unique=l.grade+':'+l.id;if(ids.has(unique))throw Error('同年級課次編號重複。');ids.add(unique);if(!/^[\w-]+$/.test(l.id)||typeof l.title!=='string'||!l.title.trim()||!Array.isArray(l.words)||!Array.isArray(l.sentences)||typeof l.paragraph!=='string'||l.words.concat(l.sentences,[l.paragraph]).some(t=>typeof t!=='string'||t.length>3000)||!['draft','published','archived'].includes(l.status))throw Error('教材格式不正確。');validateWordSectionList22(l);const prior=Object.values(old.lessons).flat().find(x=>x.id===l.id&&x.grade===l.grade);l.everPublished=!!prior?.everPublished||l.status==='published';if(Object.values(l.readings||{}).some(v=>typeof v!=='string'||v.length>80))throw Error('讀音覆寫每項最多80字。')}}
  // Prevent deleting published history through the full-JSON editor.
  for(const l of Object.values(old.lessons).flat())if(l.everPublished&&!Object.values(c.lessons).flat().some(x=>x.id===l.id&&x.grade===l.grade))throw Error('已發布課次請改為封存，不能刪除。');
- const st=c.settings;if(typeof st.punctuationCounts!=='boolean'||typeof st.integrity!=='boolean'||!Number.isInteger(st.weeklyGoal)||st.weeklyGoal<1||st.weeklyGoal>50)throw Error('規則格式不正確。');if(!Number.isFinite(st.penalty)||st.penalty<0||st.penalty>10||!(st.rate>=.3&&st.rate<=1)||Object.values(st.weights).some(v=>!Number.isFinite(v)||v<0||v>10000))throw Error('評分設定不正確。');c.settings.scoreRule=6;c.settings.integrity=false;delete c.roster;put5_('configHistory:'+old.stamp,old);c.stamp='v5-'+Utilities.getUuid();put5_('config',c);return {config:publicConfig5_()};}
-function board5_(s,p){const grade=s.role==='teacher'?String(p.grade||'4'):s.grade,period=p.period==='week'?'week':'total',rev=PropertiesService.getScriptProperties().getProperty('RANK_REV')||'0',key='rank5:'+grade+':'+period+':'+weekStart(Date.now())+':'+rev,cache=CacheService.getScriptCache();let data;try{data=JSON.parse(cache.get(key)||'null')}catch(e){}if(!data){data={rows:rankSummaries(summaries5_(),students5_(),grade,period,Date.now()),updated:new Date().toISOString(),grade,period};try{cache.put(key,JSON.stringify(data),60)}catch(e){}}return data;}
+ const st=c.settings;if(typeof st.punctuationCounts!=='boolean'||typeof st.integrity!=='boolean'||!Number.isInteger(st.weeklyGoal)||st.weeklyGoal<1||st.weeklyGoal>50)throw Error('規則格式不正確。');if(!Number.isFinite(st.penalty)||st.penalty<0||st.penalty>10||!(st.rate>=.3&&st.rate<=1)||Object.values(st.weights).some(v=>!Number.isFinite(v)||v<0||v>10000))throw Error('評分設定不正確。');c.settings.scoreRule=6;c.settings.integrity=false;delete c.roster;delete c.backendVersion;put5_('configHistory:'+old.stamp,old);c.stamp='v5-'+Utilities.getUuid();put5_('config',c);return {config:publicConfig5_()};}
+function board5_(s,p){const grade=s.role==='teacher'?String(p.grade||'4'):s.grade,period=p.period==='week'?'week':'total',rev=PropertiesService.getScriptProperties().getProperty('RANK_REV')||'0',key='rank22:'+grade+':'+period+':'+weekStart(Date.now())+':'+rev,cache=CacheService.getScriptCache();let data;try{data=JSON.parse(cache.get(key)||'null')}catch(e){}if(!data){data={rankingVersion:'2.2',rows:rankSummaries(summaries5_(),students5_(),grade,period,Date.now()),updated:new Date().toISOString(),grade,period};try{cache.put(key,JSON.stringify(data),60)}catch(e){}}return data;}
 function dispatchV5_(q,pre){const p=q.payload||{},a=q.action;if(a==='bootstrap')return {config:publicConfig5_()};if(a==='teacherLogin'){const r=teacherLogin_(p.password);r.config=publicConfig5_();return r}if(a==='studentLogin')return studentLogin5_(p);const s=auth_(q.token);if(a==='leaderboard')return board5_(s,p);
  if(s.role==='student'){if(a==='start')return start5_(p,s);if(a==='submit')return submit_(p,s,pre);if(a==='myAttempts')return {attempts:summaries5_().filter(x=>x.studentId===s.studentId)};if(a==='attempt'){const t=get5_('attempt:'+p.id);if(!t||t.studentId!==s.studentId)throw Error('找不到自己的試卷。');return {attempt:t}}if(a==='myPassword'){const st=students5_().find(x=>x.studentId===s.studentId);if(st.password!==p.current||!validStudentPassword(p.password))throw Error('原密碼不符，或新密碼不是4位數字。');st.password=p.password;st.sessionVersion++;st.resetAt=new Date().toISOString();storeStudent5_(st);log5_('學生更改密碼',st.studentId);return {token:token_('student',{studentId:st.studentId,sessionVersion:st.sessionVersion})}}
  }
@@ -1117,7 +1128,8 @@ async function storeConfigBase(c){try{validateConfig(c);c=(await request('saveCo
 /* deploy (teacher-only) */
 function tDeploy(){$('tBody').innerHTML=`<h2 style="font-size:22px">🔒 網站部署及 Google Sheets 連線</h2>
  ${PUBLISHED_ENDPOINT?'<div class="note blue">✓ 部署網址已寫入 index.html，所有 iPad 都會自動連接後台。</div>':'<div class="note">⚠ 部署網址暫時只保存在這部 iPad。請按下面「下載已設定 index.html」，上載覆蓋 GitHub；或在 GitHub 把 <code>const PUBLISHED_ENDPOINT="";</code> 引號內填上網址。完成前，學生的 iPad 仍是「本機試用」，成績不會交到你手上。</div>'}
- ${DEPLOY_STEPS}
+ <div class="note blue"><b>現有網站更新至2.2</b><p>目前後台：${cfg.backendVersion==='2.2'?'2.2（已支援系統分數先上榜）':'尚未確認為2.2'}。</p><ol><li>先保存原來的 Code.gs，記下「管理部署」目前的版本號。</li><li>用下方按鈕複製或下載2.2完整程式，貼到原來的 Apps Script 專案並保存。</li><li>「部署 → 管理部署 → 編輯（鉛筆）→ 版本：新版本 → 部署」。沿用原網址。</li><li>重新整理網站，確認這裏顯示後台2.2。</li></ol><b>不用執行 setup、遷移或重設密碼，不用更換試算表或網址。</b><p>如需還原：管理部署改回更新前的版本，並把編輯器程式還原為備份。學生資料保留。</p></div>
+ <details><summary>全新網站首次安裝說明（現有網站不用做）</summary>${DEPLOY_STEPS}</details>
  <div class="row"><button class="btn sky sm" id="gsCopy">${ico('book')} 複製 Code.gs</button><button class="btn sky sm" id="gsDl">${ico('download')} 下載 Code.gs</button></div>
  <label class="f">Apps Script 部署網址</label><input class="in" id="ep" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(endpoint)}">
  <div class="row" style="margin-top:12px"><button class="btn pri" id="epTest">${ico('cloud')} 更換網址並測試</button><button class="btn gold" id="epHtml">${ico('download')} 下載已設定 index.html</button>${PUBLISHED_ENDPOINT?'':'<button class="btn" id="epLocal">中斷連接</button>'}</div>
@@ -1154,10 +1166,10 @@ function marksV5(a){
 function weekStart(now){const d=new Date(Number(now)+8*3600000);const day=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-day);d.setUTCHours(0,0,0,0);return d.getTime()-8*3600000;}
 function rankSummaries(attempts,students,grade,period,now){
  const by={},roster={};students.forEach(s=>roster[s.studentId]=s);const start=weekStart(now);
- for(const a of attempts){const st=roster[a.studentId];if(!st||String(st.grade)!==String(grade)||!a.approved||a.excluded||a.incomplete||a.mode==='review'||a.testAccount||a.practiceOnly||!a.metrics||!a.metrics.correct||a.metrics.pending)continue;
+ for(const a of attempts){const st=roster[a.studentId];if(!st||String(st.grade)!==String(grade)||a.excluded||a.incomplete||a.mode==='review'||a.testAccount||a.practiceOnly||!a.metrics||!a.metrics.correct)continue;
  const stamp=Date.parse(a.created);if(period==='week'&&(!Number.isFinite(stamp)||stamp<start||stamp>=start+7*86400000))continue;
- const r=by[a.studentId]||(by[a.studentId]={studentId:a.studentId,name:st.name,classId:st.classId,grade:st.grade,points:0,correct:0,total:0,count:0,seconds:0,timeValid:true});
- r.points+=a.metrics.points;r.correct+=a.metrics.correct;r.total+=a.metrics.total;r.count++;if(a.timeValid!==false&&Number.isFinite(a.elapsed)&&a.elapsed>0)r.seconds+=a.elapsed;else r.timeValid=false;
+ const r=by[a.studentId]||(by[a.studentId]={studentId:a.studentId,name:st.name,classId:st.classId,grade:st.grade,points:0,correct:0,total:0,count:0,provisionalCount:0,seconds:0,timeValid:true});
+ r.points+=a.metrics.points;r.correct+=a.metrics.correct;r.total+=a.metrics.total;r.count++;if(!a.approved)r.provisionalCount++;if(a.timeValid!==false&&Number.isFinite(a.elapsed)&&a.elapsed>0)r.seconds+=a.elapsed;else r.timeValid=false;
  }
  const rows=Object.values(by);rows.forEach(r=>{r.accuracy=r.correct/r.total*100;r.secondsPerChar=r.timeValid?r.seconds/r.total:null});
  const cmp=(a,b)=>b.points-a.points||(b.correct*a.total-a.correct*b.total)/(a.total*b.total)||Number(b.timeValid)-Number(a.timeValid)||(a.timeValid?a.seconds/a.total-b.seconds/b.total:0);
@@ -1247,14 +1259,14 @@ function boardHTML5(data,compact){
  if(teacherPreview)return '<p class="ui21-empty">🧪 老師測試模式：不顯示亦不計算排名。</p>';
  if(!data)return '<p class="ui21-empty">等待連線更新排名…</p>';
  const rows=data.rows||[];
- if(!rows.length)return '<p class="ui21-empty">🌱 這段時間還沒有老師確認的練習。完成一份，就有機會上榜！</p>';
+ if(!rows.length)return '<p class="ui21-empty">🌱 這段時間還沒有可計入的練習。完成交卷並獲得分數，就有機會上榜！</p>';
  const tie={};rows.forEach(r=>tie[r.rank]=(tie[r.rank]||0)+1);
  const meId=user?.studentId,meIdx=rows.findIndex(r=>r.studentId===meId),medal={1:'🥇',2:'🥈',3:'🥉'};
  let list=rows.map((r,i)=>({r,i})),gapAt=-1;
  if(compact){const top=list.slice(0,5);if(meIdx>=5){if(meIdx>5)gapAt=5;top.push(list[meIdx])}list=top}
  const row=({r})=>{const me=r.studentId===meId;
   return `<li class="ui21-rrow ${me?'me':''}"><span class="ui21-rk">${r.rank===1?'👑 ':''}${medal[r.rank]||''}${r.rank}${tie[r.rank]>1?'<small>並列</small>':''}</span>`+
-  `<span class="ui21-rname" title="${esc(r.name)}">${esc(r.name)}${me?'<em>（你）</em>':''}<small>${esc(r.classId)}</small></span>`+
+  `<span class="ui21-rname" title="${esc(r.name)}">${esc(r.name)}${me?'<em>（你）</em>':''}<small>${esc(r.classId)}${r.provisionalCount?' · 含'+r.provisionalCount+'份暫定成績':''}</small></span>`+
   `<span class="ui21-rpts">${fmt(r.points)}<small>積分</small></span><span class="ui21-racc">${fmt(r.accuracy)}%<small>正確率</small></span>`+
   (compact?'':`<span class="ui21-rcnt">${r.count}<small>次</small></span><span class="ui21-rspd">${r.timeValid?fmt(r.secondsPerChar)+'秒':'—'}<small>${r.timeValid?'每字':'時間資料不足'}</small></span>`)+`</li>`};
  return `<ol class="ui21-rank ${compact?'':'full'}" aria-label="龍虎榜">${list.map((x,k)=>(k===gapAt?'<li class="ui21-gap" aria-hidden="true">⋯</li>':'')+row(x)).join('')}</ol>`;
@@ -1263,12 +1275,12 @@ function drawBoard5(){
  if($('homeBoard'))$('homeBoard').innerHTML=boardHTML5(rankData,true);
  if($('bT'))$('bT').innerHTML=boardHTML5(rankData,false);
  const t=rankData?'最近更新 '+new Date(rankData.updated).toLocaleTimeString('zh-HK')+' · '+(rankPeriod==='week'?'香港時間星期一開始':'同年級所有課次累積'):'等待連線更新';
- if($('boardUpdated'))$('boardUpdated').textContent=t;if($('bU'))$('bU').textContent=t;
+ const status=t+(rankData&&rankData.rankingVersion!=='2.2'?' · 目前只計老師已確認的成績':'');if($('boardUpdated'))$('boardUpdated').textContent=status;if($('bU'))$('bU').textContent=status;
  const chip=$('myRank21');if(chip){const me=rankData?.rows?.find(r=>r.studentId===user?.studentId);
-  chip.textContent=teacherPreview?'測試模式':me?`${rankPeriod==='week'?'本週':'總榜'}第 ${me.rank} 名 · ${fmt(me.points)} 積分`:'完成練習並經老師確認後就會上榜'}
+  chip.textContent=teacherPreview?'測試模式':me?`${rankPeriod==='week'?'本週':'總榜'}第 ${me.rank} 名 · ${fmt(me.points)} 積分`:'完成交卷並獲得分數就有機會上榜'}
 }
 async function refreshBoard(){if(boardBusy||(!studentToken&&!teacherToken)||teacherPreview||document.visibilityState==='hidden')return;boardBusy=true;const period=rankPeriod,grade=user?.grade||rankGrade;try{const data=await request('leaderboard',{period,grade},studentToken||teacherToken);if(period===rankPeriod&&String(grade)===String(user?.grade||rankGrade)){rankData=data;drawBoard5()}const total=period==='total'?data:await request('leaderboard',{period:'total',grade},studentToken||teacherToken);const me=total.rows.find(x=>x.studentId===user?.studentId);$('boardBtn').innerHTML=`${ico('trophy')}<span class="rank-label">${user?(me?'第 '+me.rank+' 名｜'+fmt(me.points)+' 積分':'未上榜'):'龍虎榜'}</span>`}catch(e){if($('boardUpdated'))$('boardUpdated').textContent='暫時未能更新排名';if(/登入|帳戶/.test(e.message)&&user)$('boardBtn').title='請重新登入；筆跡保留'}finally{boardBusy=false}}
-function showBoard(){if(!user&&!teacherToken)return toast('請先登入。');modal(`${boardControls5()}<div id="bT"></div><p class="small muted" id="bU"></p><p class="small muted">按積分、累積正確率、平均每字時間排列；完全相同則並列。待核卷不計入。</p>`,'🏆 同年級龍虎榜',true);wireBoard5();drawBoard5();refreshBoard()}
+function showBoard(){if(!user&&!teacherToken)return toast('請先登入。');modal(`${boardControls5()}<div id="bT"></div><p class="small muted" id="bU"></p><p class="small muted">按積分、累積正確率、平均每字時間排列；完全相同則並列。${cfg.backendVersion==='2.2'?'系統已給分先計入；待核字暫不加分，老師改分後更新。':'目前只計老師已確認的成績。'}</p>`,'🏆 同年級龍虎榜',true);wireBoard5();drawBoard5();refreshBoard()}
 function lessonView(){const list=Object.values(cfg.lessons).flat().filter(l=>String(l.grade)===String(user.grade)&&l.status==='published');
  const info=l=>{const p=Array.isArray(l.paragraphs)?l.paragraphs.filter(Boolean):(l.paragraph?[l.paragraph]:[]),m=Array.isArray(l.memoryParagraphs)?l.memoryParagraphs.filter(Boolean):(l.paragraph?[l.paragraph]:[]);return [[l.words.length,'詞語'],[l.sentences.length,'句子'],[p.length,'段落'],[m.length,'背默']].filter(x=>x[0]).map(([n,t])=>`<span>${n} ${t}</span>`).join('')};
  $('app').innerHTML=`<div class="head"><div><div class="crumb">${esc(user.classId)} · ${esc(user.name)}</div><h1>選一本課本</h1><p class="muted">選好課次，再按自己的步伐練習。</p></div></div>`+(list.length?`<div class="shelf ui21-shelf">${list.map((l,i)=>`<button class="book" data-lesson="${i}" style="--c:${PAL[i%PAL.length]}" aria-label="${esc(l.title)}"><span class="no">📖 ${i+1}</span><span class="t ui21-book-t">${esc(l.title)}</span><span class="ui21-chips">${info(l)||'<span>內容準備中</span>'}</span></button>`).join('')}</div>`:`<div class="card pad ui21-empty" style="text-align:center">${MASCOT(80,114)}<p>老師尚未發布這個年級的課次。</p><button class="btn" id="lessonHome21">${ico('home')} 回首頁</button></div>`);
@@ -1396,7 +1408,7 @@ function readyViewPre21(){
  const choices=[['review','👀','溫習'],['dictation','👂','默寫'],['memory','🧠','背默'],['random','🎲','隨機測試']];
  $('app').innerHTML=`<div class="head"><div><div class="crumb">${esc(user.name)} · 準備開始</div><h1>${esc(l.title)}</h1></div></div><div class="modes modes6">${choices.map(([v,e,n])=>`<button class="mode ${mode===v?'on':''}" data-m="${v}" ${v==='memory'&&!l.memoryParagraphs.length?'disabled':''}><span class="ico" style="--bg:var(--sun-l)">${e}</span><b>${n}</b></button>`).join('')}</div>
  <section class="card pad" style="margin-top:24px"><h2>${isRandom?'🎲 隨機抽題':'練習設定'}</h2>${memory?`<p>本課有 ${l.memoryParagraphs.length} 個背默段落。開始後沒有朗讀提示。</p><button class="btn sky sm" id="preview">先看背默內容</button>`:`<label class="f">練習範圍</label><div class="seg" id="scopeSeg">${[...(!isRandom?[['all','整份']]:[]),...scopes].map(([k,n])=>`<button data-s="${k}" class="${scope===k?'on':''}">${isRandom?'隨機':''}${n}</button>`).join('')}</div>`}
- ${isRandom?`<p>從本課 ${available} ${scope==='words'?'個詞語':scope==='sentences'?'句':'段'}中抽取，保留完整${scope==='words'?'詞語':'題目'}，同卷不重複。</p><label class="f">抽取數量</label><div class="row"><input class="in" style="width:110px" id="randomCount" type="number" min="1" max="50" value="${randomCount6}">${scope==='words'?'<button class="btn gold sm" data-count="5">5個詞語</button><button class="btn gold sm" data-count="10">10個詞語</button>':''}</div><p class="note">答對每個計分字加 ${RANDOM_RATE6[scope]} 分；錯字及漏寫不加分。老師覆核後加入累積積分。</p>`:`<p class="note">${mode==='review'?'溫習只給回饋，不加入排名。':'詞語滿分30、句子30、讀默段落40；整份三部分合共100。背默段落滿分40。各部分按正確字數比例計分，沒有的部分不計。'}</p>`}
+ ${isRandom?`<p>從本課 ${available} ${scope==='words'?'個詞語':scope==='sentences'?'句':'段'}中抽取，保留完整${scope==='words'?'詞語':'題目'}，同卷不重複。</p><label class="f">抽取數量</label><div class="row"><input class="in" style="width:110px" id="randomCount" type="number" min="1" max="50" value="${randomCount6}">${scope==='words'?'<button class="btn gold sm" data-count="5">5個詞語</button><button class="btn gold sm" data-count="10">10個詞語</button>':''}</div><p class="note">答對每個計分字加 ${RANDOM_RATE6[scope]} 分；錯字及漏寫不加分。${cfg.backendVersion==='2.2'?'交卷檢測後先計系統已給分，老師改分後更新積分。':'老師確認後計入積分。'}</p>`:`<p class="note">${mode==='review'?'溫習只給回饋，不加入排名。':'詞語滿分30、句子30、讀默段落40；整份三部分合共100。背默段落滿分40。各部分按正確字數比例計分，沒有的部分不計。'}</p>`}
  <label class="f">粵語語速 <span id="rv">${rate.toFixed(2)}×</span></label><input type="range" id="rr" min=".3" max="1" step=".05" value="${rate}"><button class="btn pri lg block" id="begin">${mode==='review'?'開始溫習':isRandom?'抽題並開始':'開始並計時'}</button><p class="small muted">${isRandom?'題庫按不同內容計算，完全相同的段落只算一題；題庫不足時會抽取全部可用題目。':''}每卷最多500格；等待開卷期間不計作答時間。</p></section>`;
  document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;if(mode==='random'){scope='words';randomCount6=10}render()});
  document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{scope=b.dataset.s;if(isRandom)randomCount6=scope==='words'?10:1;render()});
@@ -1480,12 +1492,12 @@ function resultView(){const a=attempt,app=$('app');if(!a||!app)return;
   ?`<div><b>${written}/${total}</b><small>已寫格數</small></div><div><b>${time(a.elapsed)}</b><small>書寫用時</small></div>`
   :`<div><b>${m.correct}/${m.total}</b><small>已給分字</small></div><div><b style="color:var(--rev)">${m.pending}</b><small>待核對</small></div><div><b style="color:var(--bad)">${m.wrong}</b><small>未得分</small></div><div><b>${time(a.elapsed)}</b><small>書寫用時</small></div>`;
  /* 積分說明：只在確實有依據時顯示 */
- const note={checking:'檢測完成後才會顯示初步分數；老師確認後才加入積分。',
+ const note={checking:cfg.backendVersion==='2.2'?'檢測完成並成功交卷後，系統已給分先計入積分；老師仍可調整。':'檢測完成後顯示初步分數，老師確認後計入積分。',
   failed:'未交到老師前，不會加入正式排名。',
   practice:'這次是練習，不加入排名積分。',
   local:'未連接後台：成績只在這部裝置，老師暫時看不到。',
   approved:`已確認 <b>${fmt(m.points)}</b> 積分${a.excluded?'（老師已排除排名）':''}。`,
-  review:`預計可獲 <b>${fmt(m.points)}${m.pending?'～'+fmt(m.pointsMax):''}</b> 積分。`}[st];
+  review:`目前已給分 <b>${fmt(m.points)}</b> 積分${a.excluded||a.incomplete?'（此卷不計排名）':!m.correct?'（尚無得分字，暫不上榜）':cfg.backendVersion==='2.2'?'；先按此分數計入龍虎榜，老師改分後更新':'；等待老師確認後計入排名'}。${m.pending?'待核字暫不加分。':''}`}[st];
  /* 與上次同類練習比較（沿用 v5 的規則） */
  let cmp='';if(st==='approved'||st==='review'){const prev=ownSummaries.filter(x=>x.id!==a.id&&x.approved&&x.lessonId===a.lessonId&&x.grade===a.grade&&x.scope===a.scope&&x.mode===a.mode&&x.created<a.created).sort((x,y)=>y.created.localeCompare(x.created))[0];
   if(prev)cmp=`<p class="small" style="margin:6px 0 0">上次同類練習正確率 ${fmt(prev.metrics.accuracy)}%。</p>`}
@@ -1520,7 +1532,7 @@ async function loadOwn5(force=false){
 async function showMyRecords(){
  const view=++recordsView6,sid=user?.studentId;modal('<p class="small muted" id="recordStatus6">正在更新雲端紀錄…</p><div id="mr"></div>','⭐ 我的成果');
  const draw=()=>{if(!$('mr')||view!==recordsView6||user?.studentId!==sid)return;const map=new Map(records.filter(owns).map(a=>[a.id,a]));ownSummaries.forEach(a=>map.set(a.id,{...a,cloudSaved:true}));const list=[...map.values()].sort((a,b)=>String(b.created).localeCompare(String(a.created)));
- $('mr').innerHTML=list.map(a=>{const m=marks(a);return `<button class="tile" data-record="${esc(a.id)}" style="width:100%;margin:12px 0"><span>📖</span><span><b>${esc(lessonName(a))}</b><small>${a.mode==='random'?'🎲 隨機測試 · ':''}${scopeLabel(a.scope)} · ${a.cloudSaved?(a.approved?fmt(m.score)+' 分':'待覆核'):'⚠ 本機紀錄'}${a.approved?' · '+fmt(m.points)+' 積分':''}</small></span></button>`}).join('')||'<p>暫無紀錄。</p>';
+ $('mr').innerHTML=list.map(a=>{const m=marks(a);return `<button class="tile" data-record="${esc(a.id)}" style="width:100%;margin:12px 0"><span>📖</span><span><b>${esc(lessonName(a))}</b><small>${a.mode==='random'?'🎲 隨機測試 · ':''}${scopeLabel(a.scope)} · ${a.cloudSaved?(a.approved?fmt(m.score)+' 分':fmt(m.minimum)+' 分（暫定）'):'⚠ 本機紀錄'}${a.approved?' · '+fmt(m.points)+' 積分':''}</small></span></button>`}).join('')||'<p>暫無紀錄。</p>';
  $('mr').querySelectorAll('[data-record]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{let a=list.find(x=>x.id===b.dataset.record),local=records.find(x=>x.id===a.id&&x.cells&&x.version===a.version);if(a.cloudSaved){a=local||{...(await request('attempt',{id:a.id},studentToken)).attempt,cloudSaved:true}}if(view!==recordsView6||user?.studentId!==sid)return;attempt=a;closeModal();screen='result';render()}catch(e){toast(e.message,'bad');b.disabled=false}});
  };draw();await loadOwn5(true);draw();if($('recordStatus6'))$('recordStatus6').textContent='已顯示最近可用紀錄';
 }
