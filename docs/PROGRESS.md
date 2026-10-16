@@ -1,8 +1,17 @@
 # 工作進度
 
+## 最新交付：使用者授權直接更新並保留備份
+
+- 使用者已明確要求直接更新網站，並備份原版本；取代先前「暫不合併」的安排。
+- 已先建立並核對 GitHub 遠端備份分支 `backup/pre-centering-20261015-f5152e3`，指向完整原版本 `f5152e3ec08b53f5c626bcfb2df54e0efa9eb723`。
+- 隨後將已測試的工作分支 fast-forward 合併及推送到遠端 `main`（修正及文件提交至 `0282e5e`）。入口內容與已通過測試的版本相同。
+- 更新後再查 Pages API 仍回應 Forbidden，網站 GET 仍被代理403阻擋。因此已確認 main 更新，**未能確認 Pages 建置完成或線上頁面已換版**；這不是已知的網站故障。
+- 若使用者回報新版異常，先檢查 main 是否有後續修改，再以備份恢復前端並建立新提交，不 force-push、不動 Sheet。備份是網站程式版本，並非私人 Google Sheet 備份。
+- 若 `index.html` 沒有其他後續修改，可在乾淨的 main 執行 `git fetch origin`，再以 `git restore --source=origin/backup/pre-centering-20261015-f5152e3 -- index.html` 恢復原入口，檢查差異後提交及推送。若已有其他修改，僅撤回本輪兩個置中區塊以保留後續工作。
+
 ## 2026-10-15：香港楷書置中整合
 
-工作分支：`fix/hk-kai-ink-centering`；起點 `f5152e3`，與檢查時遠端 main 相同。原工作目錄乾淨。尚未合併或部署。
+工作分支：`fix/hk-kai-ink-centering`；起點 `f5152e3`，與檢查時遠端 main 相同。原工作目錄乾淨。最初交付時未合併；後續更新狀態見上方最新交付。
 
 修正提交 `4445b89` 已推送至遠端同名分支。`gh pr create --draft` 被 GitHub GraphQL API 的 Forbidden 回應阻擋，**尚未建立 PR**；可由 [GitHub 建立 PR 頁面](https://github.com/j1mwyyzz430/dictation/pull/new/fix/hk-kai-ink-centering) 手動建立供檢查的 PR。這是 API 存取限制，Git 分支推送已成功，不需重新提供 Git 憑證。
 
@@ -44,4 +53,4 @@
 - 沒有正式 Apps Script／私人 Sheet 的部署原始碼及資料存取；正式登入、收卷、排名和學校網路冷／暖載入未實測。本輪純前端修改，Apps Script 不需重新部署。
 - 外部 Google Fonts 在隔離測試中阻擋，因此未驗證線上介面字體下載；內嵌香港楷書已實際載入並量測。
 - 後續先量測 HTML／外部字體／bootstrap／登入各段時間，再決定可快取的字體分檔；另可校正網站設定內的舊 Hanzi Writer 文案及可見字體鳴謝。
-- 更新及還原見 `PROJECT_HANDOFF.md`。不清空 Sheet、不重設密碼、不執行 setup 或遷移，不自動合併到正式發布分支。
+- 更新及還原見 `PROJECT_HANDOFF.md` 及上方最新交付。不清空 Sheet、不重設密碼、不執行 setup 或遷移。本次已依使用者明確授權合併到 main。

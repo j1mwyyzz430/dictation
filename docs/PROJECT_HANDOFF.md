@@ -2,6 +2,7 @@
 
 ## 入口、版本與發布
 
+- 最新交付：使用者已授權直接更新；修正已推送到 `main`。更新前的完整網站程式保存在遠端 `backup/pre-centering-20261015-f5152e3`。Pages 完成狀態因 API／網路403尚未確認，詳見 `PROGRESS.md`。
 - 倉庫：`j1mwyyzz430/dictation`。本輪基準 `f5152e3ec08b53f5c626bcfb2df54e0efa9eb723`；檢查時遠端預設分支及 `main` 都指向此提交。
 - 根目錄 `index.html` 是網站入口；`handoff/index.html` 是未部署候選。倉庫沒有 package manifest、建置腳本、GitHub Actions workflow、CNAME 或原有自動化測試。
 - 原始兩檔逐位元組差異只有 `ghostAlign21Style`、`ghostAlign21Script`（30新增行）；其他內容相同。本輪只匯入這兩個區塊，保留原入口的全部既有內容。
