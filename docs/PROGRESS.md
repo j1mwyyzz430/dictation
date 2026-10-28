@@ -22,7 +22,7 @@
 
 ### 發布及接續
 
-沿用此前直接更新並備份的授權，已建立並核對遠端備份 `backup/pre-dictation-sections-20261028-fcee6c1`，保留更新前 main `fcee6c1`。全部測試通過，正在推送前端。後台仍需使用者在原 Apps Script「管理部署 → 編輯 → 新版本 → 部署」更新一次；不執行 setup、不遷移、不重設密碼。完整檔（324行 Code.gs）與備份 ZIP 已產生於 `/tmp/dictation-v2.2-word-sections/`，也可用網站老師「網站部署 → 複製 Code.gs」取得。最終發布狀態會補記本節。
+沿用此前直接更新並備份的授權，已建立並核對遠端備份 `backup/pre-dictation-sections-20261028-fcee6c1`，保留更新前 main `fcee6c1`。全部測試通過，功能提交 `9ca5addf05db100a214a123360c986cc50760805` 已推送工作分支及正式 main，遠端 main／分支／備份已核對。網站讀取仍遭環境代理 CONNECT 403，尚未確認 Pages 換版完成。後台仍需使用者在原 Apps Script「管理部署 → 編輯 → 新版本 → 部署」更新一次；不執行 setup、不遷移、不重設密碼。完整檔（324行 Code.gs）與備份 ZIP 已產生於 `/tmp/dictation-v2.2-word-sections/`，也可用網站老師「網站部署 → 複製 Code.gs」取得。GitHub 發布來源為使用者先前確認的 main；Google 後台部署仍待使用者完成，前端對舊後台會保留全部詞語默寫並阻擋部分選課。
 
 ## 2026-10-16：確認第二次貼上缺少開頭
 
