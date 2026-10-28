@@ -1,5 +1,9 @@
 # 筆尖默書室接手紀錄
 
+## 2.2 溫習獎勵補充（2026-10-28）
+
+新 review 卷由後台建立 snapshot 並寫入 `reviewRewardMax:3`，`rewardedReview22` 區分它與歷史本機溫習。`marks` 按已判對字比例給最多3分，`rankSummaries` 接納有獎勵標示的卷。前端 `reviewRewardsAvailable22` 根據後台能力及帳戶／教材判斷是否用 start API；`finishAttempt`、`unsynced`、`ui21ResultState`、補交與老師列表支援新版溫習，保留測試／錯字重練排除。舊本機溫習不追溯加分。新版完整 Code.gs 同時包含默寫選課及溫習獎勵，發布狀態見 PROGRESS.md。
+
 ## 2.2 默寫選課補充（2026-10-28）
 
 使用者要求默寫也能選一課或多課詞語。`wordChoice22` 現在供 review／dictation 使用；`selectChosenWords22` 呼叫與後台一致的 `selectWordSectionGroups22`。正式開卷將部分分組及教材 stamp 傳給最後的 `start5_`，後台按自己的教材篩選後存入 snapshot；全選沿用舊行為。收卷核對原 snapshot，保留題目 keys、讀音與筆跡。

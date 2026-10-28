@@ -14,6 +14,6 @@
 python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
-局部測試：`python3 tests/check_reference.py` 與 `python3 tests/check_word_sections.py`（需 Node、Chromium、Python Playwright、Pillow）。測試使用虛構本機資料並阻擋外部請求，不會提交正式試卷。默寫選課後台測試執行 `node tests/check_dictation_sections.cjs`。排名後台／介面測試另執行 `node tests/check_ranking.cjs` 與 `python3 tests/check_ranking_ui.py`。此專案沒有編譯步驟。
+局部測試：`python3 tests/check_reference.py` 與 `python3 tests/check_word_sections.py`（需 Node、Chromium、Python Playwright、Pillow）。測試使用虛構本機資料並阻擋外部請求，不會提交正式試卷。默寫選課後台測試執行 `node tests/check_dictation_sections.cjs`。排名後台／介面測試另執行 `node tests/check_ranking.cjs` 與 `python3 tests/check_ranking_ui.py`。溫習獎勵流程另執行 `python3 tests/check_review_rewards.py`。此專案沒有編譯步驟。
 
 發布前須經使用者檢查；不要執行後端 setup／遷移或重設任何帳戶。

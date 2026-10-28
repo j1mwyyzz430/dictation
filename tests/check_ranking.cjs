@@ -74,4 +74,27 @@ for(const invalid of [{title:'重疊',start:1,end:2},{title:'越界',start:5,end
  assert.throws(()=>saveConfig5_(bad));assert.equal(get5_('config').stamp,result.stamp);
 }
 console.log('PASS real saveConfig/publicConfig functions preserve sections and reject invalid ranges before writes');
+// Review rewards are server-stamped on new starts, never retroactive local points.
+const rewardStart=start5_({id:'review-reward-paper',lessonId:'test-lesson',mode:'review',scope:'words',reviewRewardMax:999},session).start;
+assert.equal(rewardStart.reviewRewardMax,3);
+assert.equal(publicConfig5_().reviewRewardMax,3);
+auth_=()=>session;
+recognizeAll_=()=>[['甲'],['乙'],['丙'],['丁']];
+const reviewPayload={id:rewardStart.id,mode:'review',studentId:session.studentId,keys:rewardStart.groups.map(g=>g.key),cells:[[[[.2,.5],[.8,.5]]],[[[.2,.5],[.8,.5]]],[],[]],elapsed:40,newRule:true,reviewRewardMax:999};
+let rewarded=submit_(reviewPayload,session,prepareSubmit_({payload:reviewPayload})).attempt;
+assert.equal(rewarded.metrics.points,1.5);assert.equal(rewarded.metrics.maxScore,3);
+assert.equal(board5_(session,{}).rows[0].points,1.5);
+submit_(reviewPayload,session,prepareSubmit_({payload:reviewPayload}));
+assert.equal(board5_(session,{}).rows[0].count,1);
+rewarded=review_({id:rewarded.id,version:1,manual:[true,true,true,true],approve:true}).attempt;
+assert.equal(board5_(session,{}).rows[0].points,3);assert.equal(board5_(session,{}).rows[0].count,1);
+rewarded=review_({id:rewarded.id,version:2,manual:[false,false,false,false],approve:true}).attempt;
+assert.equal(board5_(session,{}).rows.length,0);
+const pendingReview={...fixture(),mode:'review',reviewRewardMax:3};
+assert.equal(marks(pendingReview).points,1.5);assert.equal(marks(pendingReview).pointsMax,2.25);
+for(const modifier of [{reviewRewardMax:undefined},{testAccount:true},{practiceOnly:true}])assert.equal(marks({...pendingReview,...modifier}).points,0);
+assert.throws(()=>prepareSubmit_({payload:{...reviewPayload,id:'old-local-review',newRule:false}}),/沒有獎勵開卷/);
+assert.equal(marks(fixture()).points,15);
+console.log('PASS new review reward: server-controlled cap, 1.5/3 scores, shared ranking, retry idempotence, manual changes, uncertain/blank exclusion and no retroactive/test rewards');
+
 `,ctx);

@@ -20,6 +20,25 @@ config5_=()=>cp(config);get5_=k=>objects.has(k)?cp(objects.get(k)):null;put5_=(k
 auth_=()=>session;storeAttempt5_=a=>{a.metrics=marks(a);put5_('attempt:'+a.id,a)};ensureSummary5_=()=>{};
 const payload=(keys,more={})=>({id:'section-paper-'+(++serial),lessonId:lesson.id,mode:'dictation',scope:'words',wordSectionKeys:keys,configStamp:config.stamp,...more});
 `,ctx);
+// Stateful browser fixture; actual start/pre-submit/submit handlers, deterministic recognition.
+if(process.argv.includes('--review-rpc')){
+ ctx.rpc=JSON.parse(fs.readFileSync(0,'utf8'));
+ const output=vm.runInContext(`
+   for(const [k,v] of Object.entries(rpc.objects||{}))objects.set(k,v);
+   let response;
+   if(rpc.action==='start')response=start5_(rpc.payload,session);
+   else if(rpc.action==='submit'){
+     const snap=get5_('start:'+rpc.payload.id),expected=rpc.payload.keys.flatMap(k=>Array.from(snap.groups.find(g=>g.key===k).text));
+     recognizeAll_=()=>expected.map(ch=>[ch]);
+     response=submit_(rpc.payload,session,prepareSubmit_({payload:rpc.payload}));
+   }else if(rpc.action==='attempt')response={attempt:get5_('attempt:'+rpc.payload.id)};
+   else if(rpc.action==='myAttempts')response={attempts:[...objects].filter(([k])=>k.startsWith('attempt:')).map(([,a])=>({...a,metrics:marks(a)}))};
+   else if(rpc.action==='leaderboard')response={rankingVersion:'2.2',updated:new Date().toISOString(),rows:rankSummaries([...objects].filter(([k])=>k.startsWith('attempt:')).map(([,a])=>({...a,metrics:marks(a)})),[session],'6','total',Date.now())};
+   else throw Error('Unexpected mock API '+rpc.action);
+   JSON.stringify({result:response,objects:Object.fromEntries(objects)});
+ `,ctx);
+ process.stdout.write(output);process.exit(0);
+}
 // Browser tests obtain snapshots from this same real start handler via stdin/stdout.
 if(process.argv.includes('--snapshot')){
  ctx.input=JSON.parse(fs.readFileSync(0,'utf8'));
