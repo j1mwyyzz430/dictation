@@ -1,6 +1,8 @@
 """Isolated word-section UI checks. Never contacts Apps Script or submits a paper."""
 import functools
 import os
+import json
+import subprocess
 import shutil
 import threading
 from http.server import ThreadingHTTPServer
@@ -43,25 +45,82 @@ def main():
             print('PASS actual ready/start path: unequal sections, empty selection blocked, original reading keys retained')
             page.evaluate("closePad(true);draftCache5.clear();localStorage.removeItem(KEY+'-draft-'+user.studentId);screen='ready';render()")
             page.locator('[data-word-choice=section3]').click()
-            assert page.evaluate("selectReviewWords22(buildGroups(currentLesson,'dictation','words')).map(g=>g.key)") == [f'w{i}' for i in list(range(7,20))+list(range(31,40))]
+            assert page.evaluate("selectChosenWords22(buildGroups(currentLesson,'dictation','words')).map(g=>g.key)") == [f'w{i}' for i in list(range(7,20))+list(range(31,40))]
             page.locator('[data-words-all]').click()
-            assert page.evaluate("selectReviewWords22(buildGroups(currentLesson,'dictation','words')).length") == 40
+            assert page.evaluate("selectChosenWords22(buildGroups(currentLesson,'dictation','words')).length") == 40
             page.evaluate("scope='all';render()")
             page.locator('[data-words-none]').click()
             page.locator('[data-word-choice=section0]').click()
-            assert page.evaluate("selectReviewWords22(buildGroups(currentLesson,'dictation','all')).map(g=>g.key)") == [f'w{i}' for i in range(7)]+['s0','p0']
-            for mode in ('dictation','memory','random'):
+            assert page.evaluate("selectChosenWords22(buildGroups(currentLesson,'dictation','all')).map(g=>g.key)") == [f'w{i}' for i in range(7)]+['s0','p0']
+            for mode in ('memory','random'):
                 page.evaluate("m=>{mode=m;scope='words';render()}",mode)
                 assert page.locator('#wordChoices22').count() == 0
-                assert page.evaluate("selectReviewWords22(buildGroups(currentLesson,'dictation','words')).length") == 40
+                assert page.evaluate("selectChosenWords22(buildGroups(currentLesson,'dictation','words')).length") == 40
             assert page.evaluate("""() => {
               mode='review';scope='words';currentLesson=clone(fixture);currentLesson.wordSections=[fixture.wordSections[0]];
               const parts=wordSections22(currentLesson);
               if(parts.length!==2||parts[1].keys.length!==33)return false;
               delete currentLesson.wordSections;
-              return selectReviewWords22(buildGroups(currentLesson,'dictation','words')).length===40;
+              return selectChosenWords22(buildGroups(currentLesson,'dictation','words')).length===40;
             }""")
             print('PASS multiple/all selection, mixed scope, unassigned words, legacy lessons, exam modes unaffected')
+            # Drive the real browser start path against the actual backend start function.
+            def backend_start(payload):
+                result = subprocess.run(['node', 'tests/check_dictation_sections.cjs', '--snapshot'],
+                    input=json.dumps(payload), text=True, capture_output=True, check=True, cwd=ROOT)
+                return json.loads(result.stdout)
+            page.expose_function('localBackendStart', backend_start)
+            page.evaluate("""() => {
+              window.realRequest=request;window.startPayloads=[];
+              request=async(action,payload)=>{
+                if(action!=='start')throw Error('Unexpected API in isolated test: '+action);
+                startPayloads.push(clone(payload));return await window.localBackendStart(payload);
+              };
+              currentLesson=clone(fixture);cfg.stamp='fixture-stamp';cfg.wordSectionDictation=true;
+              endpoint='https://invalid.example/exec';teacherPreview=false;mode='dictation';scope='words';screen='ready';render();
+            }""")
+            assert page.locator('[data-word-choice][aria-pressed=true]').count() == 4
+            assert '默寫' in page.locator('#wordChoices22 h3').inner_text()
+            page.locator('[data-words-none]').click()
+            assert page.locator('#begin').is_disabled()
+            page.locator('[data-word-choice=section1]').click()
+            assert '30分' in page.locator('#wordChoices22').inner_text()
+            # Old backend never silently gives all 40 words for a partial request.
+            page.evaluate('delete cfg.wordSectionDictation;render()')
+            assert page.locator('#begin').is_disabled()
+            assert '老師更新後台' in page.locator('#summary21').inner_text()
+            page.locator('[data-words-all]').click()
+            assert page.locator('#begin').is_enabled()
+            page.evaluate('cfg.wordSectionDictation=true;render()')
+            page.locator('[data-words-none]').click()
+            page.locator('[data-word-choice=section1]').click()
+            page.locator('#begin').click()
+            page.wait_for_selector('body[data-screen=writing]')
+            result=page.evaluate("({keys:attempt.groups.map(g=>g.key),reading:attempt.readings['w7:0'],sent:startPayloads.at(-1).wordSectionKeys})")
+            assert sorted(result['keys']) == sorted(f'w{i}' for i in range(7,20))
+            assert result['reading']=='慈' and result['sent']==['section1']
+            assert page.locator('#app .ghost,#app .ref').count()==0
+            assert page.locator('#app [data-c]').count() > 0
+            page.locator('[data-c="0"]').click()
+            assert page.locator('#pad .ghost,#pad .ref').count()==0
+            page.locator('#pdClose').click()
+            # Snapshot/groups persist in the existing draft; no new storage schema.
+            assert sorted(page.evaluate('draft5().groups.map(g=>g.key)')) == sorted(result['keys'])
+            page.locator('#sub').click()
+            assert '詞語8' not in page.locator('#modalBody').inner_text()
+            page.locator('#cont').click()
+            # Reject a misconfigured backend that advertises support but returns all words.
+            page.evaluate("""() => {
+              draftCache5.clear();localStorage.removeItem(KEY+'-draft-'+user.studentId);
+              request=async(action,payload)=>({start:{groups:buildGroups(fixture,'dictation','words'),settings:cfg.settings}});
+              screen='ready';render();
+            }""")
+            page.locator('#begin').click()
+            assert page.locator('body').get_attribute('data-screen')=='ready'
+            assert '後台題目與所選詞語不符' in page.locator('#toast').inner_text()
+            assert page.evaluate('draft5()') is None
+            page.evaluate("request=realRequest;endpoint='';teacherPreview=true")
+            print('PASS dictation UI → real backend start, subset keys/readings, empty/old-backend guards, hidden answers, draft retention, mismatched response blocked')
             page.evaluate("""() => {
               document.getElementById('app').innerHTML='<div id="tBody"></div>';
               cEdit=clone(cfg);cEdit.lessons={'6B':[clone(fixture)]};cClass='6B';cLesson=0;tContent();

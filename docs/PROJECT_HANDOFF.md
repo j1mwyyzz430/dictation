@@ -1,5 +1,13 @@
 # 筆尖默書室接手紀錄
 
+## 2.2 默寫選課補充（2026-10-28）
+
+使用者要求默寫也能選一課或多課詞語。`wordChoice22` 現在供 review／dictation 使用；`selectChosenWords22` 呼叫與後台一致的 `selectWordSectionGroups22`。正式開卷將部分分組及教材 stamp 傳給最後的 `start5_`，後台按自己的教材篩選後存入 snapshot；全選沿用舊行為。收卷核對原 snapshot，保留題目 keys、讀音與筆跡。
+
+後台 `publicConfig5_` 提供 `wordSectionDictation:true`；舊2.2後台沒有這項能力，部分詞語默寫須先更新，全部詞語可繼續。新能力不持久寫入教材。版本仍為2.2，老師部署頁另列「默寫詞語選課」狀態，完整 Code.gs 標題含「支援默寫詞語選課」。詞語部分仍滿分30；句子／段落、背默、隨機及排名算法不變。
+
+以下2.2初版描述中的「只限溫習」限制已由本次擴充取代。發布／測試見 `PROGRESS.md`。
+
 ## v2.2 詞語分組及暫定排名（2026-10-16）
 
 `feat/word-sections-and-provisional-ranking` 新增教師詞語分組及學生溫習選課。教材保留 `words` 原陣列，另以 `wordSections:[{title,start,end}]` 記錄1起算的連續區間。範圍不可重疊；未分配詞語仍可選。新增／刪除／調動原詞語後老師須重新核對範圍。

@@ -455,7 +455,7 @@ body.ui21 .ghost.ink-centred21>svg{display:block;width:100%;height:100%;overflow
 <dialog id="modal" class=""><div class="dlg" id="modalBody"></div></dialog>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script id="backendSource" type="text/plain">/* 筆尖默書室 Google Apps Script 後端 v2.2
+<script id="backendSource" type="text/plain">/* 筆尖默書室 Google Apps Script 後端 v2.2（支援默寫詞語選課）
    現有網站更新：保存原碼後替換程式，管理部署 → 編輯 → 新版本；不要執行 setup、遷移或重設密碼。
    以下原有首次安裝說明只供全新專案參考。
    1. 在目標 Google Sheet：擴充功能 → Apps Script，刪除原有代碼，貼上全部代碼。
@@ -597,7 +597,7 @@ function normalizeConfig5_(input){const c=JSON.parse(JSON.stringify(input));c.cl
  for(const k of Object.keys(c.classes)){c.lessons[k]=c.lessons[k]||[];c.lessons[k].forEach(l=>{l.grade=l.grade||gradeOf(k);l.status=l.status||'published';l.everPublished=l.everPublished||l.status==='published';l.readings=l.readings||{}})}
  c.settings=Object.assign({rate:.55,tolerance:'relaxed',penalty:3,punctuationCounts:false,integrity:false,scoreRule:5,weeklyGoal:3},c.settings||{});c.settings.weights=Object.assign({},DEFAULT_WEIGHTS,c.settings.weights||{});c.schema=5;return c;}
 function config5V5_(){return get5_('config')||normalizeConfig5_(config_());}
-function publicConfig5_(){const c=config5_();c.backendVersion='2.2';const roster=students5_().filter(s=>s.active).map(publicStudent5_);c.roster=roster;c.classes={};roster.forEach(s=>(c.classes[s.classId]||(c.classes[s.classId]=[])).push(s.name));for(const k of Object.keys(c.lessons))c.classes[k]=c.classes[k]||[];return c;}
+function publicConfig5_(){const c=config5_();c.backendVersion='2.2';c.wordSectionDictation=true;const roster=students5_().filter(s=>s.active).map(publicStudent5_);c.roster=roster;c.classes={};roster.forEach(s=>(c.classes[s.classId]||(c.classes[s.classId]=[])).push(s.name));for(const k of Object.keys(c.lessons))c.classes[k]=c.classes[k]||[];return c;}
 function summaries5_(){const gone=new Set(deletedRows6_().map(r=>r[0]));return rows5_('V5Attempts',['id','摘要JSON']).map(r=>JSON.parse(r[1])).filter(a=>!gone.has(a.id));}
 function storeAttempt5_(a){a.metrics=marks(a);const summary=JSON.parse(JSON.stringify(a));delete summary.cells;delete summary.groups;delete summary.pages;delete summary.readings;delete summary.settings;put5_('attempt:'+a.id,a);const sh=sheet5_('V5Attempts',['id','摘要JSON']),rows=sh.getDataRange().getValues(),i=rows.findIndex(r=>r[0]===a.id);if(i<0)sh.appendRow([a.id,JSON.stringify(summary)]);else sh.getRange(i+1,1,1,2).setValues([[a.id,JSON.stringify(summary)]]);PropertiesService.getScriptProperties().setProperty('RANK_REV',Utilities.getUuid());}
 function setup(){const ss=SpreadsheetApp.getActiveSpreadsheet(),p=PropertiesService.getScriptProperties();if(!ss)throw Error('請從 Google Sheet 開啟 Apps Script。');p.setProperty('SHEET_ID',ss.getId());if(!p.getProperty('ALLOWED_ORIGIN'))throw Error('請設定 ALLOWED_ORIGIN。');if(!migratePassword_())throw Error('請設定 TEACHER_PASSWORD（至少八字元）。');return migrateV5();}
@@ -642,7 +642,7 @@ function validateWordSectionList22(l){
 function saveConfig5_(input){const c=normalizeConfig5_(input),old=config5_();if(input.stamp!==old.stamp)throw Error('教材已被更新，請重新載入再修改。');const ids=new Set();for(const k in c.lessons){if(!Array.isArray(c.lessons[k])||c.lessons[k].length>80)throw Error('課次格式不正確。');for(const l of c.lessons[k]){normalizeLesson6(l);for(const key of ['paragraphTitles','memoryParagraphTitles']){if(l[key]!=null&&(!Array.isArray(l[key])||l[key].length>50||l[key].some(t=>typeof t!=='string'||t.length>80)))throw Error('段落名稱每個最多80字。')}if(l.paragraphs.length>50||l.memoryParagraphs.length>50||l.paragraphs.concat(l.memoryParagraphs).some(t=>typeof t!=='string'||t.length>3000))throw Error('段落格式不正確，每個段落最多3000字。');const unique=l.grade+':'+l.id;if(ids.has(unique))throw Error('同年級課次編號重複。');ids.add(unique);if(!/^[\w-]+$/.test(l.id)||typeof l.title!=='string'||!l.title.trim()||!Array.isArray(l.words)||!Array.isArray(l.sentences)||typeof l.paragraph!=='string'||l.words.concat(l.sentences,[l.paragraph]).some(t=>typeof t!=='string'||t.length>3000)||!['draft','published','archived'].includes(l.status))throw Error('教材格式不正確。');validateWordSectionList22(l);const prior=Object.values(old.lessons).flat().find(x=>x.id===l.id&&x.grade===l.grade);l.everPublished=!!prior?.everPublished||l.status==='published';if(Object.values(l.readings||{}).some(v=>typeof v!=='string'||v.length>80))throw Error('讀音覆寫每項最多80字。')}}
  // Prevent deleting published history through the full-JSON editor.
  for(const l of Object.values(old.lessons).flat())if(l.everPublished&&!Object.values(c.lessons).flat().some(x=>x.id===l.id&&x.grade===l.grade))throw Error('已發布課次請改為封存，不能刪除。');
- const st=c.settings;if(typeof st.punctuationCounts!=='boolean'||typeof st.integrity!=='boolean'||!Number.isInteger(st.weeklyGoal)||st.weeklyGoal<1||st.weeklyGoal>50)throw Error('規則格式不正確。');if(!Number.isFinite(st.penalty)||st.penalty<0||st.penalty>10||!(st.rate>=.3&&st.rate<=1)||Object.values(st.weights).some(v=>!Number.isFinite(v)||v<0||v>10000))throw Error('評分設定不正確。');c.settings.scoreRule=6;c.settings.integrity=false;delete c.roster;delete c.backendVersion;put5_('configHistory:'+old.stamp,old);c.stamp='v5-'+Utilities.getUuid();put5_('config',c);return {config:publicConfig5_()};}
+ const st=c.settings;if(typeof st.punctuationCounts!=='boolean'||typeof st.integrity!=='boolean'||!Number.isInteger(st.weeklyGoal)||st.weeklyGoal<1||st.weeklyGoal>50)throw Error('規則格式不正確。');if(!Number.isFinite(st.penalty)||st.penalty<0||st.penalty>10||!(st.rate>=.3&&st.rate<=1)||Object.values(st.weights).some(v=>!Number.isFinite(v)||v<0||v>10000))throw Error('評分設定不正確。');c.settings.scoreRule=6;c.settings.integrity=false;delete c.roster;delete c.backendVersion;delete c.wordSectionDictation;put5_('configHistory:'+old.stamp,old);c.stamp='v5-'+Utilities.getUuid();put5_('config',c);return {config:publicConfig5_()};}
 function board5_(s,p){const grade=s.role==='teacher'?String(p.grade||'4'):s.grade,period=p.period==='week'?'week':'total',rev=PropertiesService.getScriptProperties().getProperty('RANK_REV')||'0',key='rank22:'+grade+':'+period+':'+weekStart(Date.now())+':'+rev,cache=CacheService.getScriptCache();let data;try{data=JSON.parse(cache.get(key)||'null')}catch(e){}if(!data){data={rankingVersion:'2.2',rows:rankSummaries(summaries5_(),students5_(),grade,period,Date.now()),updated:new Date().toISOString(),grade,period};try{cache.put(key,JSON.stringify(data),60)}catch(e){}}return data;}
 function dispatchV5_(q,pre){const p=q.payload||{},a=q.action;if(a==='bootstrap')return {config:publicConfig5_()};if(a==='teacherLogin'){const r=teacherLogin_(p.password);r.config=publicConfig5_();return r}if(a==='studentLogin')return studentLogin5_(p);const s=auth_(q.token);if(a==='leaderboard')return board5_(s,p);
  if(s.role==='student'){if(a==='start')return start5_(p,s);if(a==='submit')return submit_(p,s,pre);if(a==='myAttempts')return {attempts:summaries5_().filter(x=>x.studentId===s.studentId)};if(a==='attempt'){const t=get5_('attempt:'+p.id);if(!t||t.studentId!==s.studentId)throw Error('找不到自己的試卷。');return {attempt:t}}if(a==='myPassword'){const st=students5_().find(x=>x.studentId===s.studentId);if(st.password!==p.current||!validStudentPassword(p.password))throw Error('原密碼不符，或新密碼不是4位數字。');st.password=p.password;st.sessionVersion++;st.resetAt=new Date().toISOString();storeStudent5_(st);log5_('學生更改密碼',st.studentId);return {token:token_('student',{studentId:st.studentId,sessionVersion:st.sessionVersion})}}
@@ -668,14 +668,36 @@ function get5_(key){
  return JSON.parse(str);
 }
 function config5_(){const c=config5V5_();for(const list of Object.values(c.lessons))list.forEach(normalizeLesson6);c.settings.integrity=false;c.settings.scoreRule=6;return c;}
+function wordSections22(l){
+ if(!l?.wordSections?.length)return [];
+ try{validateWordSectionList22(l)}catch{return []} // An old/malformed config must not hide words.
+ const used=new Set(),sections=l.wordSections.map((s,n)=>{
+  const keys=Array.from({length:s.end-s.start+1},(_,i)=>'w'+(s.start-1+i));keys.forEach(k=>used.add(k));
+  return {key:'section'+n,title:s.title,keys};
+ });
+ const other=l.words.map((_,i)=>'w'+i).filter(k=>!used.has(k));
+ if(other.length)sections.push({key:'other',title:'其他詞語',keys:other});return sections;
+}
+function selectWordSectionGroups22(l,groups,keys){
+ if(keys==null)return groups;
+ validateWordSectionList22(l);const parts=wordSections22(l);
+ if(!Array.isArray(keys)||!keys.length||keys.length>51||new Set(keys).size!==keys.length||keys.some(k=>typeof k!=='string'||!parts.some(s=>s.key===k)))throw Error('請選擇有效的詞語分組，最少一組。');
+ const allowed=new Map();for(const s of parts)if(keys.includes(s.key))s.keys.forEach(k=>allowed.set(k,s.title));
+ return groups.filter(g=>g.kind!=='詞語'||allowed.has(g.key)).map(g=>g.kind==='詞語'?{...g,title:allowed.get(g.key)}:g);
+}
 function start5_(p,s){
  if(!/^[\w-]{12,80}$/.test(p.id)||deleted6_(p.id))throw Error('試卷編號無效或已刪除。');
  const existing=get5_('start:'+p.id);if(existing){if(existing.studentId!==s.studentId)throw Error('試卷不是你的。');return {start:existing}}
  const c=config5_(),l=lessonFor5_(c,s,p.lessonId);if(!l||l.status!=='published')throw Error('此課次未發布或已封存。');
  if(!['dictation','memory','random'].includes(p.mode)||!['all','words','sentences','paragraph'].includes(p.scope))throw Error('模式不正確。');
- const scope=p.mode==='memory'?'paragraph':p.scope,groups=selectParagraphGroups21(selectGroups6(l,p.mode,scope,Number(p.count)),p.mode==='random'?null:p.paragraphKeys),chars=groups.flatMap(g=>Array.from(g.text).filter(ch=>!/^\s$/u.test(ch)));
+ const scope=p.mode==='memory'?'paragraph':p.scope;
+ if(p.wordSectionKeys!=null){
+  if(p.mode!=='dictation'||!['words','all'].includes(scope))throw Error('此模式不支援詞語選課。');
+  if(p.configStamp!==c.stamp)throw Error('教材已更新，請重新載入後選擇詞語分組。');
+ }
+ const groups=selectWordSectionGroups22(l,selectParagraphGroups21(selectGroups6(l,p.mode,scope,Number(p.count)),p.mode==='random'?null:p.paragraphKeys),p.wordSectionKeys),chars=groups.flatMap(g=>Array.from(g.text).filter(ch=>!/^\s$/u.test(ch)));
  if(!chars.some(ch=>counted(ch,c.settings))||chars.length>500)throw Error('練習需要有計分字，最多500格；請減少抽題數量或選單項。');
- const snap={id:p.id,studentId:s.studentId,classId:s.classId,grade:s.grade,name:s.name,lessonId:l.id,lessonTitle:l.title,mode:p.mode,scope,groups,settings:{...c.settings,scoreRule:6,integrity:false},readings:l.readings||{},configStamp:c.stamp,started:new Date().toISOString(),randomCount:p.mode==='random'?groups.length:null,paragraphKeys:p.paragraphKeys||null};
+ const snap={id:p.id,studentId:s.studentId,classId:s.classId,grade:s.grade,name:s.name,lessonId:l.id,lessonTitle:l.title,mode:p.mode,scope,groups,settings:{...c.settings,scoreRule:6,integrity:false},readings:l.readings||{},configStamp:c.stamp,started:new Date().toISOString(),randomCount:p.mode==='random'?groups.length:null,paragraphKeys:p.paragraphKeys||null,wordSectionKeys:p.wordSectionKeys||null};
  put5_('start:'+p.id,snap);return {start:snap};
 }
 function deletedRows6_(){return rows5_('DeletedAttempts',['id','studentId','deletedAt']);}
@@ -1128,7 +1150,7 @@ async function storeConfigBase(c){try{validateConfig(c);c=(await request('saveCo
 /* deploy (teacher-only) */
 function tDeploy(){$('tBody').innerHTML=`<h2 style="font-size:22px">🔒 網站部署及 Google Sheets 連線</h2>
  ${PUBLISHED_ENDPOINT?'<div class="note blue">✓ 部署網址已寫入 index.html，所有 iPad 都會自動連接後台。</div>':'<div class="note">⚠ 部署網址暫時只保存在這部 iPad。請按下面「下載已設定 index.html」，上載覆蓋 GitHub；或在 GitHub 把 <code>const PUBLISHED_ENDPOINT="";</code> 引號內填上網址。完成前，學生的 iPad 仍是「本機試用」，成績不會交到你手上。</div>'}
- <div class="note blue"><b>現有網站更新至2.2</b><p>目前後台：${cfg.backendVersion==='2.2'?'2.2（已支援系統分數先上榜）':'尚未確認為2.2'}。</p><ol><li>先保存原來的 Code.gs，記下「管理部署」目前的版本號。</li><li>用下方按鈕複製或下載2.2完整程式，貼到原來的 Apps Script 專案並保存。</li><li>「部署 → 管理部署 → 編輯（鉛筆）→ 版本：新版本 → 部署」。沿用原網址。</li><li>重新整理網站，確認這裏顯示後台2.2。</li></ol><b>不用執行 setup、遷移或重設密碼，不用更換試算表或網址。</b><p>如需還原：管理部署改回更新前的版本，並把編輯器程式還原為備份。學生資料保留。</p></div>
+ <div class="note blue"><b>現有網站更新至2.2（默寫選課更新）</b><p>目前後台：${cfg.backendVersion==='2.2'?'2.2（已支援系統分數先上榜）':'尚未確認為2.2'}。默寫詞語選課：${cfg.wordSectionDictation===true?'已支援':'待更新後台'}。</p><ol><li>先保存原來的 Code.gs，記下「管理部署」目前的版本號。</li><li>用下方按鈕複製或下載2.2完整程式，貼到原來的 Apps Script 專案並保存。</li><li>「部署 → 管理部署 → 編輯（鉛筆）→ 版本：新版本 → 部署」。沿用原網址。</li><li>重新整理網站，確認這裏顯示「默寫詞語選課：已支援」。</li></ol><b>不用執行 setup、遷移或重設密碼，不用更換試算表或網址。</b><p>如需還原：管理部署改回更新前的版本，並把編輯器程式還原為備份。學生資料保留。</p></div>
  <details><summary>全新網站首次安裝說明（現有網站不用做）</summary>${DEPLOY_STEPS}</details>
  <div class="row"><button class="btn sky sm" id="gsCopy">${ico('book')} 複製 Code.gs</button><button class="btn sky sm" id="gsDl">${ico('download')} 下載 Code.gs</button></div>
  <label class="f">Apps Script 部署網址</label><input class="in" id="ep" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(endpoint)}">
@@ -1422,8 +1444,12 @@ async function startAttempt(){
  const b=$('begin');if(!b||b.disabled)return;const l=currentLesson,wantedScope=mode==='memory'?'paragraph':scope;
  if(draft5()&&!confirm('已有未完成草稿。開始新卷會取代草稿，是否繼續？'))return;
  b.disabled=true;b.textContent='正在準備題目…';
- try{const id=uid();let snapshot;if(endpoint&&mode!=='review'&&!teacherPreview)snapshot=(await request('start',{id,lessonId:l.id,mode,scope:wantedScope,count:randomCount6,paragraphKeys:chosenParagraphKeys21()},studentToken)).start;
- else snapshot={groups:selectReviewWords22(selectParagraphGroups21(selectGroups6(l,mode,wantedScope,randomCount6),chosenParagraphKeys21())),settings:{...clone(cfg.settings),scoreRule:6,integrity:false},readings:l.readings||{}};
+ try{const id=uid(),wordKeys=chosenWordSectionKeys22();
+ if(wordSectionBackendMissing22())throw Error('老師更新後台後，即可使用默寫選課；目前可選「全部詞語」。');
+ const expectedWords=wordKeys?selectChosenWords22(buildGroups(l,'dictation','words')):null;
+ let snapshot;if(endpoint&&mode!=='review'&&!teacherPreview)snapshot=(await request('start',{id,lessonId:l.id,mode,scope:wantedScope,count:randomCount6,paragraphKeys:chosenParagraphKeys21(),wordSectionKeys:wordKeys,configStamp:cfg.stamp},studentToken)).start;
+ else snapshot={groups:selectChosenWords22(selectParagraphGroups21(selectGroups6(l,mode,wantedScope,randomCount6),chosenParagraphKeys21())),settings:{...clone(cfg.settings),scoreRule:6,integrity:false},readings:l.readings||{}};
+ if(expectedWords)verifyWordSnapshot22(snapshot,expectedWords);
  let groups=clone(snapshot.groups);const requested=chosenParagraphKeys21();if(requested){const actual=groups.filter(g=>g.kind==='段落'||g.kind==='背默').map(g=>g.key);if(actual.length!==requested.length||requested.some(k=>!actual.includes(k)))throw Error('後端未支援選段，請老師更新及重新部署 Code.gs。');}const chars=groups.flatMap(g=>Array.from(g.text).filter(c=>!/^\s$/u.test(c)));if(!chars.some(c=>counted(c,snapshot.settings))||chars.length>500)throw Error('練習需要有計分字，最多500格；請減少抽題數。');
  if(mode==='dictation')groups=[...shuffle(groups.filter(g=>g.kind==='詞語')),...groups.filter(g=>g.kind!=='詞語')];
  attempt={...snapshot,id,studentId:user.studentId,classId:user.classId,grade:user.grade,name:user.name,lessonId:l.id,lessonTitle:snapshot.lessonTitle||l.title,mode,scope:wantedScope,groups,pages:layoutPages(groups),cells:groups.flatMap(g=>Array.from(g.text).filter(c=>!/^\s$/u.test(c))).map((expected,i)=>({i,expected,strokes:[],auto:'blank',manual:null})),started:Date.now(),activeMs:0,resumedAt:Date.now(),leaves:0,hints:0,elapsed:0,created:'',version:1,approved:false,newRule:true,testAccount:teacherPreview,configStamp:snapshot.configStamp||cfg.stamp};
@@ -1741,24 +1767,40 @@ function renderWordEditor22(l){
 }
 const wordChoices22=new Map();
 function wordChoice22(){
- if(mode!=='review'||!['words','all'].includes(scope))return null;
+ if(!['review','dictation'].includes(mode)||!['words','all'].includes(scope))return null;
  const parts=wordSections22(currentLesson);if(!parts.length)return null;
- const signature=JSON.stringify([currentLesson.id,currentLesson.grade,cfg.stamp,currentLesson.words,currentLesson.wordSections]);
+ const signature=JSON.stringify([currentLesson.id,currentLesson.grade,cfg.stamp,mode,currentLesson.words,currentLesson.wordSections]);
  if(!wordChoices22.has(signature))wordChoices22.set(signature,parts.map(s=>s.key));
  return {parts,signature,selected:wordChoices22.get(signature)};
 }
-function selectReviewWords22(groups){
- const choice=wordChoice22();if(!choice)return groups;
- if(!choice.selected.length)throw Error('請最少選擇一組詞語。');
- const allowed=new Map();for(const s of choice.parts)if(choice.selected.includes(s.key))s.keys.forEach(k=>allowed.set(k,s.title));
+function selectWordSectionGroups22(l,groups,keys){
+ if(keys==null)return groups;
+ validateWordSectionList22(l);const parts=wordSections22(l);
+ if(!Array.isArray(keys)||!keys.length||keys.length>51||new Set(keys).size!==keys.length||keys.some(k=>typeof k!=='string'||!parts.some(s=>s.key===k)))throw Error('請選擇有效的詞語分組，最少一組。');
+ const allowed=new Map();for(const s of parts)if(keys.includes(s.key))s.keys.forEach(k=>allowed.set(k,s.title));
  return groups.filter(g=>g.kind!=='詞語'||allowed.has(g.key)).map(g=>g.kind==='詞語'?{...g,title:allowed.get(g.key)}:g);
 }
+function chosenWordSectionKeys22(){
+ const choice=wordChoice22();if(!choice||choice.selected.length===choice.parts.length)return null;
+ return choice.selected.slice();
+}
+function selectChosenWords22(groups){
+ const choice=wordChoice22();return choice?selectWordSectionGroups22(currentLesson,groups,choice.selected):groups;
+}
+function wordSectionBackendMissing22(){
+ return mode==='dictation'&&endpoint&&!teacherPreview&&chosenWordSectionKeys22()!=null&&cfg.wordSectionDictation!==true;
+}
+function verifyWordSnapshot22(snapshot,expected){
+ const actual=snapshot.groups.filter(g=>g.kind==='詞語');
+ if(actual.length!==expected.length||new Set(actual.map(g=>g.key)).size!==actual.length||actual.some(g=>!expected.some(x=>x.key===g.key&&x.text===g.text)))throw Error('後台題目與所選詞語不符，請老師更新後台並重新載入。');
+}
+
 function renderWordChoices22(host,update){
  const choice=wordChoice22();if(!choice)return;
  const box=document.createElement('section');box.className='paragraph-picker21';box.id='wordChoices22';host.before(box);
  const draw=()=>{
   const selected=wordChoices22.get(choice.signature),all=selected.length===choice.parts.length;
-  box.innerHTML='<h3>選擇今次溫習的詞語</h3><p class="small muted">可集中溫習一課、選幾課，或全部溫習。溫習不計排名。</p><div class="row" style="margin-bottom:12px"><button type="button" class="btn sm" data-words-all aria-pressed="'+all+'">全部詞語</button><button type="button" class="btn sm" data-words-none>清除選擇</button></div><div class="paragraph-options21">'+choice.parts.map(s=>`<button type="button" class="paragraph-choice21 ${selected.includes(s.key)?'on':''}" data-word-choice="${esc(s.key)}" aria-pressed="${selected.includes(s.key)}"><b>${esc(s.title)}</b><small>${s.keys.length} 個詞語</small><span>${selected.includes(s.key)?'✓ 已選擇':'點選這一課'}</span></button>`).join('')+'</div>';
+  box.innerHTML='<h3>選擇今次'+(mode==='dictation'?'默寫':'溫習')+'的詞語</h3><p class="small muted">可選一課、幾課或全部。'+(mode==='dictation'?'只按所選詞語計分，詞語部分滿分仍為30分。':'溫習不計排名。')+'</p><div class="row" style="margin-bottom:12px"><button type="button" class="btn sm" data-words-all aria-pressed="'+all+'">全部詞語</button><button type="button" class="btn sm" data-words-none>清除選擇</button></div><div class="paragraph-options21">'+choice.parts.map(s=>`<button type="button" class="paragraph-choice21 ${selected.includes(s.key)?'on':''}" data-word-choice="${esc(s.key)}" aria-pressed="${selected.includes(s.key)}"><b>${esc(s.title)}</b><small>${s.keys.length} 個詞語</small><span>${selected.includes(s.key)?'✓ 已選擇':'點選這一課'}</span></button>`).join('')+'</div>';
   box.querySelectorAll('[data-word-choice]').forEach(b=>b.onclick=()=>{const key=b.dataset.wordChoice;wordChoices22.set(choice.signature,selected.includes(key)?selected.filter(k=>k!==key):[...selected,key]);draw();update()});
   box.querySelector('[data-words-all]').onclick=()=>{wordChoices22.set(choice.signature,choice.parts.map(s=>s.key));draw();update()};
   box.querySelector('[data-words-none]').onclick=()=>{wordChoices22.set(choice.signature,[]);draw();update()};
@@ -1799,7 +1841,7 @@ function readyView(){readyViewPre21();const l=currentLesson,app=$('app');if(!app
  const begin=$('begin'),rc=$('randomCount'),summary=document.createElement('div');summary.className='ui21-summary';summary.id='summary21';summary.setAttribute('aria-live','polite');begin.before(summary);
  const update=()=>{let txt,ok=true,warn='';if(isRandom){const n=Number(rc?.value),avail=ui21Pool(l,scope);if(!Number.isInteger(n)||n<1||n>50){ok=false;warn='抽題數量要是 1 至 50。'}else if(!avail){ok=false;warn='這個範圍沒有題目。'}
  txt=`<span>🎲 隨機測試</span><span>${scopeLabel(scope)}</span><span>抽 ${ok?Math.min(n,avail):'—'} 題${ok&&n>avail?`（題庫只有 ${avail} 題，會全部抽出）`:''}</span><span>每個正確字 +${RANDOM_RATE6[scope]} 分</span>`;
- }else{const base=memory?buildGroups(l,'memory','paragraph'):buildGroups(l,mode==='review'?'dictation':mode,scope),keys=chosenParagraphKeys21(),g=keys?.length===0||wordChoice22()?.selected.length===0?[]:selectReviewWords22(selectParagraphGroups21(base,keys)),c=ui21Count(g);if(wordChoice22()?.selected.length===0){ok=false;warn='請最少選擇一組詞語。'}else if(!c.scored){ok=false;warn=keys?.length===0?'請最少選擇一個段落。':'這個範圍沒有可計分的字。'}else if(c.cells>500){ok=false;warn=`共 ${c.cells} 格，超過每卷 500 格上限，請選較小範圍。`}txt=`<span>${UI21_MODE[mode]}</span><span>${memory?'背默段落':scopeLabel(scope)}</span><span>共 ${c.cells} 格</span>${keys?'<span>已選 '+keys.length+' 段</span>':''}${mode==='review'?'<span>不計分</span>':''}`}
+ }else{const base=memory?buildGroups(l,'memory','paragraph'):buildGroups(l,mode==='review'?'dictation':mode,scope),keys=chosenParagraphKeys21(),g=keys?.length===0||wordChoice22()?.selected.length===0?[]:selectChosenWords22(selectParagraphGroups21(base,keys)),c=ui21Count(g);if(wordChoice22()?.selected.length===0){ok=false;warn='請最少選擇一組詞語。'}else if(wordSectionBackendMissing22()){ok=false;warn='老師更新後台後，即可使用默寫選課；目前可選「全部詞語」。'}else if(!c.scored){ok=false;warn=keys?.length===0?'請最少選擇一個段落。':'這個範圍沒有可計分的字。'}else if(c.cells>500){ok=false;warn=`共 ${c.cells} 格，超過每卷 500 格上限，請選較小範圍。`}txt=`<span>${UI21_MODE[mode]}</span><span>${memory?'背默段落':scopeLabel(scope)}</span><span>共 ${c.cells} 格</span>${keys?'<span>已選 '+keys.length+' 段</span>':''}${mode==='review'?'<span>不計分</span>':''}`}
  summary.innerHTML=txt+(warn?`<b style="color:var(--bad);width:100%">⚠ ${warn}</b>`:'');if(!begin.hasAttribute('aria-busy'))begin.disabled=!ok};
  renderWordChoices22(summary,update);renderParagraphChoices21(summary,update);
  if(rc){rc.addEventListener('input',update);app.querySelectorAll('[data-count]').forEach(b=>b.addEventListener('click',update))}update();

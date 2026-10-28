@@ -25,6 +25,7 @@ python3 -m http.server 8000 --bind 127.0.0.1
 python3 tests/check_reference.py
 python3 tests/check_word_sections.py
 node tests/check_ranking.cjs
+node tests/check_dictation_sections.cjs
 python3 tests/check_ranking_ui.py
 git diff --check
 ```
@@ -33,4 +34,4 @@ git diff --check
 
 只跑與改動有關的測試；確認實際執行的結果，不把語法檢查等同後端或 iPad 實測。結束或中斷前更新 `docs/PROGRESS.md`，寫明修改、已驗證／未驗證項目及下一步。
 
-詞語分組使用 `wordSections` 的1起算範圍，保留 `words`／`wN`，只篩選溫習。2.2 已依使用者提供的現行 Code.gs 加入暫定積分上榜（只計已給分字），教師改分覆寫同卷摘要。後台／前端分步發布狀態以 `docs/PROGRESS.md` 為準；不要把程式完成視為 Google 已部署。
+詞語分組使用 `wordSections` 的1起算範圍，保留 `words`／`wN`，可篩選溫習與默寫（詞語／整份範圍），不影響背默及隨機。正式默寫須由後台按 `wordSectionKeys` 及 `configStamp` 建立 snapshot；前端以 `wordSectionDictation` 能力標示判斷支援，單看2.2版本號不足。2.2 已依使用者提供的現行 Code.gs 加入暫定積分上榜（只計已給分字），教師改分覆寫同卷摘要。後台／前端分步發布狀態以 `docs/PROGRESS.md` 為準；不要把程式完成視為 Google 已部署。
