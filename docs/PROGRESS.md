@@ -21,7 +21,7 @@
 
 ### 發布與還原
 
-沿用使用者此前直接更新並備份的授權，已建立並核對遠端 `backup/pre-review-rewards-20261028-f7187f7`，保留目前 main `f7187f7`。全部測試通過，正在推送程式。Google 後台仍須使用者在原 Apps Script 保存完整新 Code.gs，管理部署 → 編輯 → 新版本 → 部署，保持原網址。完整328行 Code.gs 及更新前後台備份已封裝為 `/tmp/dictation-v2.2-review-rewards/penroom-v2.2-review-rewards.zip`，方便下載完整檔案避免再次貼上截斷。最終發布提交會補記。
+沿用使用者此前直接更新並備份的授權，已建立並核對遠端 `backup/pre-review-rewards-20261028-f7187f7`，保留目前 main `f7187f7`。全部測試通過，功能提交 `b6cc7c6` 已推送工作分支及正式 main，Google 後台尚待使用者部署。Google 後台仍須使用者在原 Apps Script 保存完整新 Code.gs，管理部署 → 編輯 → 新版本 → 部署，保持原網址。完整328行 Code.gs 及更新前後台備份已封裝為 `/tmp/dictation-v2.2-review-rewards/penroom-v2.2-review-rewards.zip`，方便下載完整檔案避免再次貼上截斷。本環境之前讀取 Pages 受代理403阻擋，尚未驗證線上前端換版；網站不會因單純推送 GitHub 而自動部署 Google 程式。
 
 更新前已開始的本機溫習仍只給回饋；更新後重新開一份才有獎勵。後台還原為不支援溫習的版本前，先處理已開始的獎勵溫習及待補交卷；筆跡仍保留，但舊後台不能接收 review，需恢復支援版本才能補交。Google Sheet 資料不清除，所有備份僅為程式碼備份。
 
